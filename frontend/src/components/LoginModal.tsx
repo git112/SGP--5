@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface LoginModalProps {
   open: boolean;
@@ -21,6 +23,9 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const { login, signup } = useAuth();
+  const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -28,6 +33,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     setLoading(true);
     try {
       const endpoint = isSignUp ? "/signup" : "/login";
+      // Ensure confirm_password is the key for signup
       const payload = isSignUp
         ? { email, password, confirm_password: confirmPassword }
         : { email, password };
@@ -38,16 +44,25 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.detail || "Something went wrong");
+        let errorMsg = "Something went wrong";
+        if (Array.isArray(data.detail)) {
+          errorMsg = data.detail.map((d: any) => d.msg).join(", ");
+        } else if (typeof data.detail === "string") {
+          errorMsg = data.detail;
+        }
+        setError(errorMsg);
       } else {
         setSuccess(data.message || (isSignUp ? "Signup successful" : "Login successful"));
-        // Optionally close modal or reset fields
+        if (isSignUp) {
+          signup(email);
+        } else {
+          login(email);
+        }
         setEmail("");
         setPassword("");
         setConfirmPassword("");
-        if (!isSignUp) {
-          setTimeout(() => onClose(), 1000);
-        }
+        onClose();
+        navigate("/insights");
       }
     } catch (err) {
       setError("Network error. Please try again.");
