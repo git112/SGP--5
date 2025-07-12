@@ -41,22 +41,22 @@ const features = [
 
 export const FeaturesSection = () => {
   return (
-    <section className="py-20 relative bg-background overflow-hidden geometric-bg">
+    <section className="py-20 relative bg-slate-900 overflow-hidden">
       {/* Background decorations */}
-      <div className="absolute inset-0 grid-pattern opacity-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"></div>
       <div className="absolute top-0 left-0 w-full h-full">
-        <div className="absolute top-20 left-10 w-2 h-2 bg-primary/20 rounded-full animate-ping"></div>
-        <div className="absolute top-40 right-20 w-1 h-1 bg-secondary/30 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-success/20 rounded-full animate-ping" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 right-10 w-1 h-1 bg-warning/25 rounded-full animate-ping" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-20 left-10 w-2 h-2 bg-cyan-400/30 rounded-full animate-ping"></div>
+        <div className="absolute top-40 right-20 w-1 h-1 bg-blue-400/40 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-cyan-300/30 rounded-full animate-ping" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-10 w-1 h-1 bg-blue-300/40 rounded-full animate-ping" style={{ animationDelay: '3s' }}></div>
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16 slide-up">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
             Key Features
           </h2>
-          <p className="text-base muted max-w-2xl mx-auto font-light">
+          <p className="text-base text-slate-300 max-w-2xl mx-auto font-light">
             Fun + Formal Tone - Everything you need to succeed in your placement journey
           </p>
         </div>
@@ -64,26 +64,33 @@ export const FeaturesSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {features.map((feature, index) => (
             <div key={index} className="group slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-              <div className="card h-full group-hover:bg-primary/5 transition-all duration-500 backdrop-blur-sm">
+              <div className="relative h-full p-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-cyan-500/20 group-hover:bg-slate-800/80">
+                {/* Gradient border effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-sm"></div>
+                <div className="absolute inset-[1px] bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl -z-10"></div>
+                
                 <div className="flex flex-col h-full">
                   <div className="flex items-start space-x-4 mb-4">
-                    <div className="flex-shrink-0 text-3xl group-hover:scale-110 transition-transform duration-300">
+                    <div className="flex-shrink-0 text-3xl group-hover:scale-110 transition-transform duration-300 filter group-hover:drop-shadow-lg">
                       {feature.icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors tracking-tight">
+                      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-cyan-400 transition-colors tracking-tight">
                         {feature.title}
                       </h3>
-                      <p className="text-sm muted leading-relaxed mb-3 font-light">
+                      <p className="text-sm text-slate-300 leading-relaxed mb-3 font-light">
                         {feature.description}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="mt-auto pt-4 border-t border-border/20">
-                    <p className="text-xs text-primary font-medium italic tracking-wide">
-                      "{feature.tagline}"
-                    </p>
+                  <div className="mt-auto pt-4 relative">
+                    {/* Glowing badge effect */}
+                    <div className="inline-block bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-sm rounded-full px-3 py-1 border border-cyan-400/30">
+                      <p className="text-xs text-cyan-400 font-medium italic tracking-wide">
+                        "{feature.tagline}"
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -93,16 +100,22 @@ export const FeaturesSection = () => {
 
         {/* Final CTA Banner */}
         <div className="mt-20 text-center slide-up">
-          <div className="card max-w-4xl mx-auto bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 backdrop-blur-sm">
-            <h3 className="text-2xl font-bold text-foreground mb-4 tracking-tight">
-              Ready to plan your placement journey the smart way?
-            </h3>
-            <p className="text-base muted mb-6 font-light">
-              Let's make data your biggest strength. Try PlaceMentor AI today.
-            </p>
-            <Button className="btn-primary font-semibold">
-              Get Started Now
-            </Button>
+          <div className="relative max-w-4xl mx-auto p-8 bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm rounded-2xl border border-slate-600/50 shadow-2xl">
+            {/* Gradient border effect for CTA */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl opacity-20 blur-sm"></div>
+            <div className="absolute inset-[1px] bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl"></div>
+            
+            <div className="relative z-10">
+              <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">
+                Ready to plan your placement journey the smart way?
+              </h3>
+              <p className="text-base text-slate-300 mb-6 font-light">
+                Let's make data your biggest strength. Try PlaceMentor AI today.
+              </p>
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-0">
+                Get Started Now
+              </Button>
+            </div>
           </div>
         </div>
       </div>

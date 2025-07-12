@@ -32,50 +32,109 @@ export const FAQSection = () => {
   };
 
   return (
-    <section className="py-16 relative bg-background geometric-bg">
-      <div className="absolute inset-0 grid-pattern opacity-5"></div>
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-12 slide-up">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
+    <section className="py-16 lg:py-20 relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900/30 to-slate-900">
+      {/* Matching homepage background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-900/80 to-purple-900/20"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.08),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.05),transparent_70%)]"></div>
+      {/* Subtle animated particles effect */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
+        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-blue-400 rounded-full animate-pulse delay-1000"></div>
+        <div className="absolute bottom-1/4 left-3/4 w-1 h-1 bg-purple-400 rounded-full animate-pulse delay-2000"></div>
+      </div>
+      
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-12 lg:mb-16 animate-fade-in">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">
             Frequently Asked Questions
           </h2>
-          <p className="text-base muted max-w-2xl mx-auto font-light">
+          <p className="text-lg sm:text-xl text-slate-300 max-w-4xl mx-auto font-light leading-relaxed">
             Get answers to common questions about placement preparation and our AI assistant
           </p>
         </div>
         
-        <div className="max-w-3xl mx-auto space-y-3">
+        <div className="max-w-4xl mx-auto space-y-4">
           {faqs.map((faq, index) => (
-            <Collapsible
+            <div
               key={index}
-              open={openItems.includes(index)}
-              onOpenChange={() => toggleItem(index)}
+              className="opacity-0 animate-bounce-in"
+              style={{ 
+                animationDelay: `${index * 150}ms`, 
+                animationFillMode: 'forwards',
+                animation: `slideUp 0.6s ease-out ${index * 0.15}s forwards`
+              }}
             >
-              <CollapsibleTrigger className="w-full">
-                <div className="card text-left hover:bg-primary/5 transition-all duration-300 slide-up backdrop-blur-sm" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-foreground pr-4 tracking-tight">
-                      {faq.question}
-                    </h3>
-                    <div className={`transform transition-transform duration-200 ${openItems.includes(index) ? 'rotate-45' : ''}`}>
-                      <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
+              <Collapsible
+                open={openItems.includes(index)}
+                onOpenChange={() => toggleItem(index)}
+              >
+                <CollapsibleTrigger className="w-full group">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 text-left hover:bg-white/10 hover:border-cyan-400/30 hover:shadow-2xl hover:shadow-cyan-400/10 transition-all duration-500 transform hover:scale-[1.02] group-hover:translate-y-[-2px]">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white pr-4 group-hover:text-cyan-300 transition-colors duration-300">
+                        {faq.question}
+                      </h3>
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:from-cyan-400/30 group-hover:to-blue-500/30 group-hover:border-cyan-400/50 ${openItems.includes(index) ? 'rotate-45 bg-gradient-to-br from-cyan-400/30 to-blue-500/30 border-cyan-400/50' : ''}`}>
+                        <svg 
+                          className={`w-5 h-5 transition-all duration-300 ${openItems.includes(index) ? 'text-cyan-300' : 'text-slate-300 group-hover:text-cyan-300'}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="px-6 py-4 bg-card/50 rounded-2xl border border-border/50 backdrop-blur-sm">
-                  <p className="text-sm muted leading-relaxed font-light">
-                    {faq.answer}
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="overflow-hidden transition-all duration-500 ease-out">
+                  <div className="mt-3 mx-2 mb-2 px-6 sm:px-8 py-6 bg-gradient-to-r from-white/5 to-cyan-400/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-inner">
+                    <p className="text-slate-200 leading-relaxed font-light text-base sm:text-lg">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
           ))}
         </div>
       </div>
+      
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(40px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .animate-fade-in {
+            animation: fadeIn 0.8s ease-out;
+          }
+          
+          .animate-bounce-in {
+            animation: slideUp 0.6s ease-out;
+          }
+        `
+      }} />
     </section>
   );
 };
