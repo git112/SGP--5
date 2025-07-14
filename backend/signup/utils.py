@@ -5,7 +5,6 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def validate_email_domain(email: str) -> bool:
-    # Matches: abcitxyz@charusat.edu.in or abc.it@charusat.ac.in
     pattern1 = r'^[\w\d]*it[\w\d]*@charusat\.edu\.in$'
     pattern2 = r'^[\w\d]+\.it@charusat\.ac\.in$'
     return bool(re.match(pattern1, email) or re.match(pattern2, email))
