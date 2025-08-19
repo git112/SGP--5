@@ -37,7 +37,8 @@ backend/service-account.json
 backend/*service-account*.json
 backend/*-sa-key.json
 backend/placementor-ai.json
-
+placementor-ai.json
+package-lock.json
 backend/package-lock.json
 
 # Logs
