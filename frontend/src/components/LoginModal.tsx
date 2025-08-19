@@ -1,150 +1,473 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useRef, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+ 
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-// Backend API base URL (change as needed)
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
 export const LoginModal = ({ open, onClose }: LoginModalProps) => {
+  // Debug logging
+  console.log('LoginModal rendered, open:', open);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { login, signup, forgotPassword, resetPassword } = useAuth();
   const navigate = useNavigate();
+
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmNewPasswordRef = useRef<HTMLInputElement>(null);
+  const forgotEmailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => {
+        if (showResetPassword && newPasswordRef.current) {
+          newPasswordRef.current.focus();
+        } else if (showForgotPassword && forgotEmailRef.current) {
+          forgotEmailRef.current.focus();
+        } else if (emailRef.current) {
+          emailRef.current.focus();
+        }
+      }, 100);
+    }
+  }, [open, showResetPassword, showForgotPassword]);
+
+  // Removed Google OAuth initialization
+
+  // Get reset token from URL if present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setResetToken(token);
+      setShowResetPassword(true);
+      setShowForgotPassword(false);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
     setLoading(true);
+    
     try {
-      const endpoint = isSignUp ? "/signup" : "/login";
-      // Ensure confirm_password is the key for signup
-      const payload = isSignUp
-        ? { email, password, confirm_password: confirmPassword }
-        : { email, password };
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        let errorMsg = "Something went wrong";
-        if (Array.isArray(data.detail)) {
-          errorMsg = data.detail.map((d: any) => d.msg).join(", ");
-        } else if (typeof data.detail === "string") {
-          errorMsg = data.detail;
-        }
-        setError(errorMsg);
+      if (isSignUp) {
+        await signup(email, password);
+        setSuccess("Account created successfully!");
+        setTimeout(() => {
+          onClose();
+          navigate("/insights");
+        }, 1000);
       } else {
-        setSuccess(data.message || (isSignUp ? "Signup successful" : "Login successful"));
-        if (isSignUp) {
-          signup(email);
-        } else {
-          login(email);
-        }
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
-        onClose();
-        navigate("/insights");
+        await login(email, password);
+        setSuccess("Login successful!");
+        setTimeout(() => {
+          onClose();
+          navigate("/insights");
+        }, 1000);
       }
-    } catch (err) {
-      setError("Network error. Please try again.");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
+  // Removed Google OAuth handlers
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    
+    try {
+      const message = await forgotPassword(email);
+      setSuccess(message || "Password reset email sent!");
+      setShowForgotPassword(false);
+    } catch (err: any) {
+      setError(err.message || "Failed to send reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const message = await resetPassword(resetToken, newPassword);
+      setSuccess(message || "Password reset successfully!");
+      setTimeout(() => {
+        setShowResetPassword(false);
+        setShowForgotPassword(false);
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setResetToken("");
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || "Password reset failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    setSuccess("");
+    setShowForgotPassword(false);
+    setShowResetPassword(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Allow form submission with Enter key
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const form = e.currentTarget.closest('form');
+      if (form) {
+        const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitButton && !submitButton.disabled) {
+          submitButton.click();
+        }
+      }
+    }
+  };
+
+  if (showResetPassword) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md card border-primary/20 slide-up login-modal">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-foreground">
+              Reset Password
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Enter your new password below
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-6 p-6" onSubmit={handleResetPassword} onKeyDown={handleKeyDown}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="resetToken" className="text-foreground">Reset Token</Label>
+                <Input
+                  id="resetToken"
+                  type="text"
+                  value={resetToken}
+                  onChange={(e) => setResetToken(e.target.value)}
+                  required
+                  placeholder="Paste token from email link"
+                  tabIndex={0}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword" className="text-foreground">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    className="pr-10"
+                    ref={newPasswordRef}
+                    tabIndex={1}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded"
+                    tabIndex={2}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmNewPassword" className="text-foreground">Confirm New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmNewPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    className="pr-10"
+                    ref={confirmNewPasswordRef}
+                    tabIndex={3}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded"
+                    tabIndex={4}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {error && <div id="reset-password-error" className="text-red-500 text-sm text-center">{error}</div>}
+            {success && <div className="text-green-500 text-sm text-center">{success}</div>}
+            
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowResetPassword(false)}
+                className="flex-1 transition-all duration-200 cursor-pointer active:scale-95"
+                disabled={loading}
+                tabIndex={5}
+                style={{ pointerEvents: 'auto' }}
+              >
+                Back
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1 transition-all duration-200 cursor-pointer active:scale-95" 
+                disabled={loading} 
+                tabIndex={6}
+                style={{ pointerEvents: 'auto' }}
+              >
+                {loading ? "Resetting..." : "Reset Password"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (showForgotPassword) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md card border-primary/20 slide-up login-modal">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-foreground">
+              Forgot Password
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Enter your email to receive a password reset link
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-6 p-6" onSubmit={handleForgotPassword} onKeyDown={handleKeyDown}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgotEmail" className="text-foreground">Email</Label>
+                <Input
+                  id="forgotEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  ref={forgotEmailRef}
+                  tabIndex={1}
+                />
+              </div>
+            </div>
+            
+            {error && <div id="forgot-password-error" className="text-red-500 text-sm text-center">{error}</div>}
+            {success && <div className="text-green-500 text-sm text-center">{success}</div>}
+            
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForgotPassword(false)}
+                className="flex-1"
+                disabled={loading}
+                tabIndex={2}
+              >
+                Back
+              </Button>
+              <Button type="submit" className="flex-1" disabled={loading} tabIndex={3}>
+                {loading ? "Sending..." : "Send Reset Email"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md card border-primary/20 slide-up">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center text-foreground">
-            {isSignUp ? "Create Account" : "Welcome Back"}
-          </DialogTitle>
-        </DialogHeader>
-        <form className="space-y-6 p-6" onSubmit={handleSubmit}>
+    <Dialog open={open} onOpenChange={handleClose}>
+              <DialogContent className="sm:max-w-md card border-primary/20 slide-up login-modal">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-foreground">
+              {isSignUp ? "Create Account" : "Welcome Back"}
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              {isSignUp ? "Create your account to get started" : "Sign in to your account"}
+            </DialogDescription>
+          </DialogHeader>
+        
+        <form 
+          className="space-y-6 p-6" 
+          onSubmit={handleSubmit} 
+          onKeyDown={handleKeyDown}
+          onClick={(e) => {
+            console.log('Form clicked at:', e.target);
+          }}
+        >
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                className="bg-card border-border focus:border-primary rounded-2xl"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  ref={emailRef}
+                  className="pl-10"
+                  tabIndex={1}
+                  aria-describedby="login-error"
+                  autoComplete="email"
+                />
+              </div>
             </div>
+            
             <div className="space-y-2">
               <Label htmlFor="password" className="text-foreground">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                className="bg-card border-border focus:border-primary rounded-2xl"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  ref={passwordRef}
+                  className="pl-10 pr-10"
+                  tabIndex={2}
+                  aria-describedby="login-error"
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                />
+                                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded p-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    tabIndex={3}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
+            
             {isSignUp && (
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  className="bg-card border-border focus:border-primary rounded-2xl"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    className="pl-10 pr-10"
+                    ref={confirmPasswordRef}
+                    tabIndex={4}
+                    aria-describedby="confirm-password-error"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded p-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    tabIndex={5}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-          {error && <div className="error text-center">{error}</div>}
-          {success && <div className="success text-center">{success}</div>}
-          <div className="space-y-4">
-            <Button className="w-full btn-primary" type="submit" disabled={loading}>
-              {loading ? (isSignUp ? "Creating..." : "Signing in...") : isSignUp ? "Create Account" : "Sign In"}
-            </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 muted">Or</span>
-              </div>
+          
+          {!isSignUp && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setShowResetPassword(true); setShowForgotPassword(false); }}
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded px-2 py-1 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                tabIndex={isSignUp ? 6 : 4}
+                style={{ pointerEvents: 'auto' }}
+              >
+                Forgot your password?
+              </button>
             </div>
-            <Button
-              variant="outline"
-              className="w-full border-border hover:bg-card rounded-2xl"
-              type="button"
-              disabled
-            >
-              {/* Google icon here */}
-              Continue with Google
-            </Button>
-          </div>
-          <div className="text-center">
+          )}
+          
+          {error && <div id="login-error" className="text-red-500 text-sm text-center">{error}</div>}
+          {success && <div className="text-green-500 text-sm text-center">{success}</div>}
+          
+          <Button 
+            type="submit" 
+            className="w-full transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-lg" 
+            disabled={loading}
+            tabIndex={isSignUp ? 7 : 5}
+            style={{ pointerEvents: 'auto' }}
+          >
+            {loading ? (isSignUp ? "Creating..." : "Signing in...") : (isSignUp ? "Create Account" : "Sign In")}
+          </Button>
+          
+          {/* Removed Google OAuth UI */}
+          
+          <div className="text-center text-sm">
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               type="button"
               onClick={() => {
@@ -152,11 +475,11 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 setError("");
                 setSuccess("");
               }}
-              className="text-sm text-primary hover:underline transition-colors"
+              className="text-cyan-400 hover:text-cyan-300 transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded px-1 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+              tabIndex={isSignUp ? 9 : 7}
+              style={{ pointerEvents: 'auto' }}
             >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
+              {isSignUp ? "Sign in" : "Sign up"}
             </button>
           </div>
         </form>

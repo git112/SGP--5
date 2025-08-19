@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,10 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import {
-  Building2, TrendingUp, DollarSign, BookOpen, Target, BarChart3
+  Building2, TrendingUp, DollarSign, BookOpen, Target, BarChart3, RefreshCw
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { insightsApi, InsightsData, SheetsMetadata, RoleData } from '../services/insightsApi';
 
 // Animation variants
 const containerVariants = {
@@ -35,40 +37,9 @@ const buttonVariants = {
   tap: { scale: 0.95 }
 };
 
-// Sample data
-const cgpaData = [
-  { cgpa: '6.0-7.0', offers: 12, students: 45 },
-  { cgpa: '7.0-8.0', offers: 28, students: 60 },
-  { cgpa: '8.0-9.0', offers: 42, students: 55 },
-  { cgpa: '9.0-10.0', offers: 38, students: 40 }
-];
+// No mock/fallback: we will use only Google Sheets API via insightsApi
 
-const companiesData = [
-  { name: 'TCS', hires: 45, color: '#4F46E5' },
-  { name: 'Infosys', hires: 38, color: '#06B6D4' },
-  { name: 'Wipro', hires: 32, color: '#10B981' },
-  { name: 'Accenture', hires: 28, color: '#F59E0B' },
-  { name: 'IBM', hires: 25, color: '#EF4444' },
-  { name: 'Cognizant', hires: 22, color: '#8B5CF6' }
-];
-
-const rolesData = [
-  { role: 'Software Developer', count: 85, color: '#4F46E5' },
-  { role: 'Data Analyst', count: 45, color: '#06B6D4' },
-  { role: 'System Engineer', count: 38, color: '#10B981' },
-  { role: 'Quality Analyst', count: 32, color: '#F59E0B' },
-  { role: 'DevOps Engineer', count: 28, color: '#EF4444' }
-];
-
-const packageData = [
-  { year: '2020', avg: 4.2, highest: 12, total: 180 },
-  { year: '2021', avg: 4.8, highest: 15, total: 195 },
-  { year: '2022', avg: 5.4, highest: 18, total: 210 },
-  { year: '2023', avg: 6.1, highest: 22, total: 225 },
-  { year: '2024', avg: 6.8, highest: 25, total: 240 }
-];
-
-const FloatingDot = ({ className, delay }) => (
+const FloatingDot = ({ className, delay }: { className: string; delay: number }) => (
   <motion.div
     className={`absolute rounded-full ${className}`}
     animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.8, 0.3] }}
@@ -76,20 +47,17 @@ const FloatingDot = ({ className, delay }) => (
   />
 );
 
-// 1. Glassy chart container utility
+// Glassy chart container utility
 const glassyChart = "glass shadow-2xl border border-white/10 p-4 md:p-8 rounded-3xl relative overflow-hidden";
 
-// 2. Modern gradients for charts
-// (Define in SVG <defs> for each chart)
-
-// 4. Custom glassy tooltip
+// Custom glassy tooltip
 const GlassyTooltip = (props: any) => {
   const { active, payload, label } = props;
   if (!active || !payload || !payload.length) return null;
   return (
     <div className="bg-slate-900/80 backdrop-blur-md border border-cyan-400/20 shadow-xl rounded-xl px-4 py-3 text-cyan-200 text-sm font-medium animate-fade-in">
       <div className="mb-1 font-semibold text-cyan-300">{label}</div>
-      {payload.map((entry, i) => (
+      {payload.map((entry: any, i: number) => (
         <div key={i} className="flex items-center gap-2 mb-1 last:mb-0">
           <span className="inline-block w-3 h-3 rounded-full" style={{ background: entry.color }}></span>
           <span>{entry.name}: <span className="font-bold">{entry.value}</span></span>
@@ -101,6 +69,99 @@ const GlassyTooltip = (props: any) => {
 
 export default function Insights() {
   const [activeTab, setActiveTab] = useState('2024');
+  const queryClient = useQueryClient();
+
+  // Fetch insights data with React Query
+  const { data: insightsData, isLoading, error, refetch } = useQuery({
+    queryKey: ['insights'],
+    queryFn: insightsApi.getInsights,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    retry: 3,
+  });
+
+  // Fetch sheets metadata
+  const { data: metadata } = useQuery({
+    queryKey: ['sheets-metadata'],
+    queryFn: insightsApi.getSheetsMetadata,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Debug logging
+  console.log('Insights API instance:', insightsApi);
+  console.log('Insights Data:', insightsData);
+  console.log('Error:', error);
+  console.log('Loading:', isLoading);
+
+  const data = insightsData as InsightsData | undefined;
+
+  // Build dynamic year list from roles data
+  const availableYears = useMemo(() => {
+    const years = (data?.roles_data || []).map(r => r.year).filter(Boolean);
+    const unique = Array.from(new Set(years));
+    return unique.sort((a, b) => parseInt(a) - parseInt(b));
+  }, [data?.roles_data]);
+
+  // Initialize active tab to last available year when data arrives
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(activeTab)) {
+      setActiveTab(availableYears[availableYears.length - 1]);
+    }
+  }, [availableYears]);
+
+  const getRolesDataForYear = (year: string) => {
+    return (data?.roles_data || []).filter(r => r.year === year);
+  };
+
+  const getTopRolesForYear = (year: string) => {
+    return [...getRolesDataForYear(year)].sort((a, b) => b.count - a.count);
+  };
+
+  const rolesByYear = useMemo(() => {
+    const grouped: Record<string, RoleData[]> = {};
+    (data?.roles_data || []).forEach((r) => {
+      if (!grouped[r.year]) grouped[r.year] = [];
+      grouped[r.year].push(r);
+    });
+    return grouped;
+  }, [data?.roles_data]);
+
+  const rolesForYear = useMemo(() => getTopRolesForYear(activeTab), [activeTab, data?.roles_data]);
+  const maxRoleCount = useMemo(() => (rolesForYear.length ? Math.max(...rolesForYear.map(r => r.count)) : 1), [rolesForYear]);
+  const top5Roles = useMemo(() => rolesForYear.slice(0, 5), [rolesForYear]);
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    try {
+      await insightsApi.refreshSheetsData();
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      queryClient.invalidateQueries({ queryKey: ['sheets-metadata'] });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#1a1f3a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+          <p className="text-cyan-400 text-lg">Loading insights data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#1a1f3a] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-cyan-400 text-lg">No insights data available.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -109,7 +170,7 @@ export default function Insights() {
       initial="hidden"
       animate="visible"
     >
-      {/* Exact home page hero background */}
+      {/* Background */}
       <motion.div 
         className="absolute inset-0 bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#1a1f3a] animate-gradient-x bg-[length:400%_400%] z-0"
         initial={{ opacity: 0 }}
@@ -119,27 +180,21 @@ export default function Insights() {
       <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419] via-transparent to-[#1a1f3a]/50 opacity-80 z-0"></div>
       <div className="absolute inset-0 bg-gradient-to-r from-[#36b5d3]/5 via-transparent to-[#14788f]/5 animate-pulse z-0"></div>
       <div className="absolute inset-0 grid-pattern opacity-20 z-0"></div>
-      {/* Floating orbs and shapes (copied from HeroSection) */}
+      
+      {/* Floating orbs */}
       <motion.div className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-[#36b5d3]/10 blur-3xl z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute bottom-1/4 left-1/4 w-48 h-48 rounded-full bg-[#14788f]/10 blur-2xl z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
       <motion.div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-[#36b5d3]/15 blur-xl z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
       <motion.div className="absolute bottom-1/3 right-1/3 w-24 h-24 rounded-full bg-[#14788f]/15 blur-lg z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
-      <motion.div className="absolute top-20 left-20 w-3 h-3 bg-[#36b5d3]/40 rounded-full shadow-lg shadow-[#36b5d3]/20 z-0" animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute top-40 right-32 w-2 h-2 bg-[#14788f]/50 rounded-full shadow-lg shadow-[#14788f]/20 z-0" animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.9, 0.5] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
-      <motion.div className="absolute bottom-40 left-32 w-2.5 h-2.5 bg-[#36b5d3]/40 rounded-full shadow-lg shadow-[#36b5d3]/20 z-0" animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
-      <motion.div className="absolute bottom-20 right-20 w-2 h-2 bg-[#14788f]/45 rounded-full shadow-lg shadow-[#14788f]/20 z-0" animate={{ scale: [1, 1.3, 1], opacity: [0.45, 0.9, 0.45] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
-      <motion.div className="absolute top-1/3 left-1/2 w-4 h-4 bg-[#36b5d3]/20 rounded-full shadow-lg shadow-[#36b5d3]/10 z-0" animate={{ y: [-5, 5, -5], rotate: [0, 180, 360] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} />
-      <motion.div className="absolute bottom-1/2 right-1/4 w-3 h-3 bg-[#14788f]/30 rounded-full shadow-lg shadow-[#14788f]/10 z-0" animate={{ y: [-3, 3, -3], rotate: [0, -180, -360] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} />
-      <motion.div className="absolute top-10 right-10 w-6 h-6 bg-[#36b5d3]/30 rounded-full blur-sm shadow-2xl shadow-[#36b5d3]/30 z-0" animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
-      {/* End home page hero background */}
+
       <Header />
 
-      {/* Header Section */}
+      {/* Hero Section */}
       <section className="py-16 px-6 relative overflow-hidden">
-        {/* Floating dots styled like home page */}
         <motion.div className="absolute top-20 left-20 w-3 h-3 bg-cyan-400/30 rounded-full animate-ping" style={{animationDelay: '0s'}} />
         <motion.div className="absolute bottom-20 right-20 w-2 h-2 bg-blue-400/40 rounded-full animate-ping" style={{animationDelay: '1s'}} />
         <motion.div className="absolute top-1/2 left-1/3 w-2 h-2 bg-cyan-300/30 rounded-full animate-ping" style={{animationDelay: '2s'}} />
+        
         <div className="max-w-7xl mx-auto text-center relative z-10">
           <motion.div variants={itemVariants}>
             <div className="flex justify-center mb-6">
@@ -150,16 +205,33 @@ export default function Insights() {
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-cyan-300 bg-clip-text text-transparent">
               Placement Insights
             </h1>
-            <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-4">
               Unlock data-driven insights into placement trends, roles, and salaries.
             </p>
+            
+            {/* Data Source Info */}
+            {metadata && (
+              <div className="text-sm text-slate-400 mb-6">
+                <p>Data from: {metadata.title}</p>
+                <p>Last updated: {new Date(metadata.last_updated).toLocaleString()}</p>
+              </div>
+            )}
+            
             <motion.div className="flex justify-center gap-4 mt-8" variants={buttonVariants}>
               <Button
                 variant="outline"
                 className="border-cyan-400/30 hover:bg-cyan-500/20 rounded-full font-semibold"
-                onClick={() => setActiveTab('2020-2024')}
+                onClick={() => setActiveTab('2020-2025')}
               >
-                2020–2024
+                2020–2025
+              </Button>
+              <Button
+                variant="outline"
+                className="border-cyan-400/30 hover:bg-cyan-500/20 rounded-full font-semibold flex items-center gap-2"
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh Data
               </Button>
             </motion.div>
           </motion.div>
@@ -169,25 +241,23 @@ export default function Insights() {
       {/* Stats Overview */}
       <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { icon: TrendingUp, value: '94.2%', label: 'Placement Rate', change: '+12.5%' },
-            { icon: DollarSign, value: '₹6.8L', label: 'Average Package', change: '+8.9%' },
-            { icon: Building2, value: '120+', label: 'Partner Companies', change: '+15.3%' }
-          ].map(({ icon: Icon, value, label, change }, index) => (
+          {data.stats_overview?.map((stat, index) => (
             <motion.div
-              key={label}
+              key={stat.metric}
               className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:shadow-xl transition-all"
               variants={cardVariants}
               whileHover="hover"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="bg-cyan-500/20 rounded-full p-3">
-                  <Icon className="w-6 h-6 text-cyan-400" />
+                  {index === 0 && <TrendingUp className="w-6 h-6 text-cyan-400" />}
+                  {index === 1 && <DollarSign className="w-6 h-6 text-cyan-400" />}
+                  {index === 2 && <Building2 className="w-6 h-6 text-cyan-400" />}
                 </div>
-                <span className="text-green-400 text-sm font-semibold">{change}</span>
+                <span className="text-green-400 text-sm font-semibold">{stat.change}</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">{value}</h3>
-              <p className="text-slate-300">{label}</p>
+              <h3 className="text-2xl font-bold text-white mb-2">{stat.value}</h3>
+              <p className="text-slate-300">{stat.metric}</p>
             </motion.div>
           ))}
         </div>
@@ -207,7 +277,7 @@ export default function Insights() {
           </motion.div>
           <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={cgpaData} barCategoryGap={24}>
+              <BarChart data={data.cgpa_data} barCategoryGap={24}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="cgpa" stroke="#A5F3FC" tick={{ fontWeight: 600 }} />
                 <YAxis stroke="#A5F3FC" tick={{ fontWeight: 600 }} />
@@ -226,17 +296,20 @@ export default function Insights() {
       </section>
 
       {/* Top Companies Hiring */}
-      <section className="py-16 px-6 relative overflow-hidden">
-        <motion.div className="absolute top-1/4 right-1/4 w-2 h-2 bg-cyan-400/30 rounded-full animate-ping" style={{animationDelay: '0.5s'}} />
-        <motion.div className="absolute bottom-1/3 left-1/4 w-1.5 h-1.5 bg-cyan-300/30 rounded-full animate-ping" style={{animationDelay: '1.5s'}} />
+      <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
             <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-              Top Recruiting Partners
+              Top Hiring Companies
             </h2>
             <div className="mx-auto w-16 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 rounded-full mb-4"></div>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">Leading companies hiring our graduates.</p>
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              Companies with the highest student placement rates.
+            </p>
           </motion.div>
+          
+         
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
               <div className="flex items-center gap-3 mb-6">
@@ -246,60 +319,113 @@ export default function Insights() {
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
-                    data={companiesData}
+                    data={data.companies_data}
                     cx="50%"
                     cy="50%"
-                    outerRadius={120}
+                    outerRadius={100}
+                    innerRadius={40}
                     dataKey="hires"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: any) => 
+                      percent > 0.05 ? `${name}\n${(percent * 100).toFixed(1)}%` : ''
+                    }
+                    labelLine={false}
                     isAnimationActive={true}
-                    animationDuration={1200}
+                    animationDuration={1500}
+                    animationBegin={300}
                   >
-                    {companiesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: "drop-shadow(0 0 8px "+entry.color+"33)" }} />
+                    {data.companies_data?.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color} 
+                        style={{ 
+                          filter: "drop-shadow(0 0 12px "+entry.color+"40)",
+                          stroke: "#1e293b",
+                          strokeWidth: 2
+                        }} 
+                      />
                     ))}
                   </Pie>
-                  <Tooltip content={(props: any) => <GlassyTooltip {...props} />} />
+                  <Tooltip 
+                    content={({ active, payload }: any) => {
+                      if (active && payload && payload.length) {
+                        const companyData = payload[0].payload;
+                        const totalHires = data.companies_data?.reduce((sum: number, company: any) => sum + company.hires, 0) || 0;
+                        const percentage = totalHires > 0 ? ((companyData.hires / totalHires) * 100).toFixed(1) : '0.0';
+                        return (
+                          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-3 border border-slate-600/50 shadow-lg">
+                            <p className="text-white font-medium">{companyData.name}</p>
+                            <p className="text-cyan-400 text-sm">{percentage}%</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                    cursor={{ fill: "rgba(255,255,255,0.1)" }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </motion.div>
+            
+            {/* Top 10 Company Rankings - Side Panel */}
             <motion.div className="space-y-4" variants={itemVariants}>
               <div className="flex items-center gap-3 mb-6">
                 <Building2 className="w-6 h-6 text-cyan-400" />
-                <h3 className="text-xl font-semibold text-white">Company Rankings</h3>
+                <h3 className="text-xl font-semibold text-white">Top 10 Companies</h3>
               </div>
-              {companiesData.map((company, index) => (
+              {data.companies_data?.map((company, index) => (
                 <motion.div
                   key={index}
-                  className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:shadow-xl transition-all"
+                  className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/50 hover:shadow-xl transition-all hover:scale-105"
                   variants={cardVariants}
                   whileHover="hover"
+                  style={{
+                    background: `linear-gradient(135deg, ${company.color}10 0%, rgba(30, 41, 59, 0.5) 100%)`,
+                    borderColor: `${company.color}30`
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${company.color}20` }}>
-                        <span className="text-lg font-bold" style={{ color: company.color }}>#{index + 1}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-lg text-white">{company.name}</h4>
-                        <p className="text-slate-400 text-sm">Technology Partner</p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${company.color} 0%, ${company.color}80 100%)`,
+                        boxShadow: `0 4px 16px ${company.color}40`
+                      }}
+                    >
+                      <span className="text-sm font-bold text-white relative z-10">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-white">{company.hires}</div>
-                      <div className="text-sm text-slate-400">Students Hired</div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-white text-sm">{company.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: company.color }}
+                        />
+                        <p className="text-slate-400 text-xs">Technology Partner</p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
+
           </div>
+          
+
+          
+          
         </div>
       </section>
 
       {/* Popular Roles */}
-      <section className="py-16 px-6">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-16 px-6 relative overflow-hidden">
+        {/* Floating background elements */}
+        <motion.div className="absolute top-1/4 right-1/4 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl animate-pulse" style={{animationDelay: '0s'}} />
+        <motion.div className="absolute bottom-1/4 left-1/4 w-24 h-24 bg-blue-400/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '1s'}} />
+        <motion.div className="absolute top-1/2 right-1/3 w-16 h-16 bg-indigo-400/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '2s'}} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.div className="text-center mb-12" variants={itemVariants}>
             <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
               In-Demand Job Roles
@@ -307,10 +433,29 @@ export default function Insights() {
             <div className="mx-auto w-16 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 rounded-full mb-4"></div>
             <p className="text-lg text-slate-300 max-w-2xl mx-auto">Most sought-after positions in the job market.</p>
           </motion.div>
+          
+          {/* Year Filter Tabs */}
+          <motion.div className="flex flex-wrap justify-center gap-3 mb-8" variants={itemVariants}>
+            {availableYears.map((year) => (
+              <button
+                key={year}
+                onClick={() => setActiveTab(year)}
+                className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 ${
+                  activeTab === year
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25 scale-105'
+                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-600/30 hover:scale-105'
+                }`}
+              >
+                {year}
+              </button>
+            ))}
+          </motion.div>
+
+          {/* Roles Cards Grid (Popular Roles) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rolesData.map((role, index) => (
+            {top5Roles.map((role, index) => (
               <motion.div
-                key={index}
+                key={`${role.role}-${index}`}
                 className="group bg-slate-800/50 backdrop-blur-sm rounded-3xl p-8 border border-slate-700/50 hover:shadow-xl transition-all hover:-translate-y-1"
                 variants={cardVariants}
                 whileHover="hover"
@@ -324,17 +469,50 @@ export default function Insights() {
                     <p className="text-slate-400 text-sm">High Demand</p>
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-white mb-2">{role.count}</div>
-                <div className="text-slate-300 mb-4">Total Placements</div>
-                <div className="w-full bg-slate-700 rounded-full h-2">
+                <div className="text-center mb-4">
+                  <div className="text-2xl font-bold text-cyan-400 mb-2">{role.role}</div>
+                  <div className="text-slate-300 text-sm">Top Role</div>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-3">
                   <div
-                    className="h-2 rounded-full transition-all duration-1000"
-                    style={{ width: `${(role.count / 85) * 100}%`, backgroundColor: role.color }}
+                    className="h-3 rounded-full transition-all duration-1000 bg-gradient-to-r from-cyan-400 to-blue-500"
+                    style={{ width: `${(role.count / maxRoleCount) * 100}%` }}
                   />
                 </div>
               </motion.div>
             ))}
           </div>
+
+          
+
+          {/* Year Summary Stats */}
+          <motion.div className="mt-12" variants={itemVariants}>
+            <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/30 chart-hover">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-white mb-2">Yearly Placement Overview</h3>
+                <p className="text-slate-400 text-sm">Total placements and top roles by year</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
+                {availableYears.map((year) => {
+                  const roles = rolesByYear[year] || [];
+                  const totalPlacements = roles.reduce((sum, role) => sum + role.count, 0);
+                  const topRole = [...roles].sort((a, b) => b.count - a.count)[0];
+                  return (
+                    <div key={year} className="space-y-2 p-3 rounded-xl bg-slate-800/20 hover:bg-slate-700/30 transition-colors">
+                      <div className="text-lg font-bold text-white">{year}</div>
+                      <div className="text-2xl font-bold text-cyan-400">{totalPlacements}</div>
+                      <div className="text-xs text-slate-400">Total</div>
+                      {topRole && (
+                        <div className="text-xs text-slate-300">
+                          Top: {topRole.role.length > 15 ? topRole.role.substring(0, 15) + '...' : topRole.role}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -352,7 +530,7 @@ export default function Insights() {
           </motion.div>
           <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
             <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={packageData}>
+              <AreaChart data={data.package_data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="year" stroke="#A5F3FC" tick={{ fontWeight: 600 }} />
                 <YAxis stroke="#A5F3FC" tick={{ fontWeight: 600 }} />
@@ -376,22 +554,21 @@ export default function Insights() {
       </section>
 
       {/* Call-to-Action */}
-      <section className="py-16 px-6 relative overflow-hidden">
-        <motion.div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cyan-400/30 rounded-full animate-ping" style={{animationDelay: '0s'}} />
-        <motion.div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-blue-400/40 rounded-full animate-ping" style={{animationDelay: '1.2s'}} />
+      <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to Shape Your Future?</h2>
-            <p className="text-xl text-indigo-100 mb-8">Use these insights to plan your career path.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              Ready to Explore More Insights?
+            </h2>
+            <p className="text-lg text-slate-300 mb-8">
+              Discover detailed company information, interview questions, and personalized recommendations.
+            </p>
             <motion.div className="flex flex-col sm:flex-row gap-4 justify-center" variants={buttonVariants}>
-              <Button className="bg-white text-indigo-600 font-semibold px-8 py-3 rounded-full hover:bg-indigo-50">
-                Check My Chances
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                Explore Companies
               </Button>
-              <Button
-                variant="outline"
-                className="border-white text-white font-semibold px-8 py-3 rounded-full hover:bg-white hover:text-indigo-600"
-              >
-                Get Career Guidance
+              <Button variant="outline" className="border-cyan-400/30 hover:bg-cyan-500/20 text-cyan-400 font-semibold px-8 py-3 rounded-lg transition-all duration-300">
+                Practice Interviews
               </Button>
             </motion.div>
           </motion.div>

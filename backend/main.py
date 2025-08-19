@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from signup.schemas import UserCreate, UserLogin
+from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest
 from signup.utils import (
     validate_email_domain,
     validate_password,
@@ -8,8 +8,21 @@ from signup.utils import (
     verify_password
 )
 from signup.database import get_user_collection
+from signup.auth_service import AuthService
+import os
+from dotenv import load_dotenv
+from typing import Optional
+
+# Load environment from backend/.env regardless of CWD
+_ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=_ENV_PATH)
+
+from sheets_service import sheets_service
 
 app = FastAPI()
+
+# Initialize auth service
+auth_service = AuthService()
 
 # CORS setup
 app.add_middleware(
@@ -19,6 +32,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Google Sheets configuration
+SPREADSHEET_ID = os.getenv("GOOGLE_SPREADSHEET_ID", "your-spreadsheet-id-here")
+
+# Helper function to get current user from JWT token
+async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    
+    token = authorization.replace("Bearer ", "")
+    email = auth_service.verify_jwt_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    return email
 
 @app.post("/signup")
 def signup(user: UserCreate):
@@ -49,7 +77,211 @@ def login(user: UserLogin):
     if not verify_password(user.password, user_doc["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    return {"message": "Login successful"}
+    # Generate JWT token
+    token = auth_service.generate_jwt_token(user.email)
+    return {"message": "Login successful", "token": token, "email": user.email}
+
+# Removed Google OAuth endpoint
+
+@app.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest):
+    """Send password reset email"""
+    try:
+        # Check if user exists
+        users = get_user_collection()
+        user_doc = users.find_one({"email": request.email})
+        if not user_doc:
+            # Don't reveal if user exists or not for security
+            return {"message": "If the email exists, a password reset link has been sent"}
+        
+        # Generate reset token
+        reset_token = auth_service.create_password_reset_token(request.email)
+        
+        # Create reset URL (frontend will handle this)
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        reset_url = f"{frontend_url}/reset-password?token={reset_token}"
+        
+        # Send email
+        if auth_service.send_password_reset_email(request.email, reset_url):
+            return {"message": "Password reset email sent successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send reset email")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.post("/reset-password")
+def reset_password(request: ResetPasswordRequest):
+    """Reset password using token"""
+    try:
+        if request.new_password != request.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        
+        if not validate_password(request.new_password):
+            raise HTTPException(status_code=400, detail="Password must have at least one number and one special character")
+        
+        # Verify reset token
+        email = auth_service.verify_password_reset_token(request.token)
+        if not email:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        
+        # Update password in database
+        users = get_user_collection()
+        hashed_pw = hash_password(request.new_password)
+        users.update_one(
+            {"email": email},
+            {"$set": {"password": hashed_pw}}
+        )
+        
+        return {"message": "Password reset successfully"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.get("/me")
+def get_current_user_info(current_user: str = Depends(get_current_user)):
+    """Get current user information"""
+    users = get_user_collection()
+    user_doc = users.find_one({"email": current_user})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "email": user_doc["email"],
+        "name": user_doc.get("name", ""),
+        "picture": user_doc.get("picture", ""),
+        "oauth_provider": user_doc.get("oauth_provider", "email")
+    }
+
+# Google Sheets API endpoints
+@app.get("/api/insights")
+async def get_insights():
+    """Get all insights data from Google Sheets"""
+    try:
+        data = sheets_service.get_insights_data(SPREADSHEET_ID)
+        # Return partial data if available, don't fail if some sections are empty
+        if data:
+            return data
+        else:
+            raise HTTPException(status_code=404, detail="No data found")
+    except HTTPException:
+        # Let explicit HTTP errors propagate (e.g., 404 No data)
+        raise
+    except Exception as e:
+        # Include last low-level error from the sheets service to aid debugging
+        last_err = getattr(sheets_service, "last_error", "")
+        detail = f"Error fetching insights: {str(e)}"
+        if last_err:
+            detail += f" | root: {last_err}"
+        raise HTTPException(status_code=500, detail=detail)
+
+@app.get("/api/insights/{data_type}")
+async def get_insights_by_type(data_type: str):
+    """Get specific type of insights data"""
+    try:
+        data = sheets_service.get_insights_data(SPREADSHEET_ID)
+        if data_type not in data:
+            raise HTTPException(status_code=404, detail=f"Data type '{data_type}' not found")
+        return {data_type: data[data_type]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        last_err = getattr(sheets_service, "last_error", "")
+        detail = f"Error fetching {data_type}: {str(e)}"
+        if last_err:
+            detail += f" | root: {last_err}"
+        raise HTTPException(status_code=500, detail=detail)
+
+@app.get("/api/insights/raw/cgpa")
+async def get_raw_cgpa_data():
+    """Get raw CGPA data from Google Sheets for debugging"""
+    try:
+        raw_data = sheets_service.get_sheet_data(SPREADSHEET_ID, 'CGPA Data!A2:C')
+        if not raw_data:
+            # fallbacks to common sheet names
+            for rng in ['Sheet1!A2:C', 'Sheet1!A1:C', 'Sheet1!A:C']:
+                raw_data = sheets_service.get_sheet_data(SPREADSHEET_ID, rng)
+                if raw_data:
+                    break
+        if not raw_data:
+            raise HTTPException(status_code=404, detail="No raw CGPA data found")
+        
+        # Format raw data
+        formatted_data = []
+        for row in raw_data:
+            if len(row) >= 2:
+                try:
+                    formatted_data.append({
+                        'year': row[0],
+                        'cgpa': float(row[1]),
+                        'offers': int(row[2]) if len(row) > 2 else 1
+                    })
+                except (ValueError, IndexError):
+                    continue
+        
+        return {
+            'raw_cgpa_data': formatted_data,
+            'total_records': len(formatted_data),
+            'message': 'Raw CGPA data fetched successfully'
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        last_err = getattr(sheets_service, "last_error", "")
+        detail = f"Error fetching raw CGPA data: {str(e)}"
+        if last_err:
+            detail += f" | root: {last_err}"
+        raise HTTPException(status_code=500, detail=detail)
+
+@app.get("/api/sheets/metadata")
+async def get_sheets_metadata():
+    """Get Google Sheets metadata"""
+    try:
+        metadata = sheets_service.get_sheet_metadata(SPREADSHEET_ID)
+        return metadata
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching metadata: {str(e)}")
+
+@app.get("/api/sheets/refresh")
+async def refresh_sheets_data():
+    """Force refresh of Google Sheets data"""
+    try:
+        # This will re-authenticate and fetch fresh data
+        sheets_service._authenticate()
+        data = sheets_service.get_insights_data(SPREADSHEET_ID)
+        return {"message": "Data refreshed successfully", "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error refreshing data: {str(e)}")
+
+@app.get("/api/sheets/diagnostics")
+async def sheets_diagnostics():
+    """Return diagnostics about auth method and ranges used for insights fetching."""
+    try:
+        data = sheets_service.get_insights_data(SPREADSHEET_ID)
+        return {
+            "auth_method": getattr(sheets_service, "auth_method", "unknown"),
+            "service_account_email": getattr(sheets_service, "service_account_email", ""),
+            "last_used_ranges": getattr(sheets_service, "last_used_ranges", {}),
+            "ranges_tried": getattr(sheets_service, "ranges_tried", {}),
+            "last_error": getattr(sheets_service, "last_error", ""),
+            "has_data_keys": list(data.keys()) if isinstance(data, dict) else [],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Diagnostics error: {str(e)}")
+
+@app.get("/api/sheets/debug/values")
+async def debug_values(range: str):
+    """Fetch raw values for an arbitrary range to debug access and naming issues."""
+    try:
+        raw = sheets_service.get_sheet_data(SPREADSHEET_ID, range)
+        return {
+            "range": range,
+            "num_rows": len(raw),
+            "first_5_rows": raw[:5],
+            "note": "If num_rows is 0, either the range is wrong or the sheet has no values in that range."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Debug values error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

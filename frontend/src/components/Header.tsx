@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export const Header = () => {
   const [showLogin, setShowLogin] = useState(false);
   const location = useLocation();
-  const { isLoggedIn, userEmail, logout } = useAuth();
+  const { isLoggedIn, user, logout } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
 
   const navItems = [
@@ -183,7 +183,7 @@ export const Header = () => {
               >
                 <Avatar className="border-2 border-cyan-400/30 hover:border-cyan-400 transition-all duration-300">
                   <AvatarFallback className="bg-cyan-400/20 text-cyan-400 font-semibold">
-                    {userEmail?.[0]?.toUpperCase() || "U"}
+                    {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </motion.button>
@@ -197,7 +197,7 @@ export const Header = () => {
                     exit="exit"
                   >
                     <div className="px-4 py-3 text-sm text-slate-300 border-b border-slate-700/30">
-                      {userEmail}
+                      {user?.name || user?.email}
                     </div>
                     <motion.button 
                       className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-slate-800/50 hover:text-red-300 transition-all duration-300 rounded-b-xl" 
