@@ -308,8 +308,6 @@ export default function Insights() {
             </p>
           </motion.div>
           
-         
-          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
               <div className="flex items-center gap-3 mb-6">
@@ -338,7 +336,7 @@ export default function Insights() {
                         key={`cell-${index}`} 
                         fill={entry.color} 
                         style={{ 
-                          filter: "drop-shadow(0 0 12px "+entry.color+"40)",
+                          filter: `drop-shadow(0 0 12px ${entry.color}40)`,
                           stroke: "#1e293b",
                           strokeWidth: 2
                         }} 
@@ -409,12 +407,7 @@ export default function Insights() {
                 </motion.div>
               ))}
             </motion.div>
-
           </div>
-          
-
-          
-          
         </div>
       </section>
 
@@ -473,17 +466,13 @@ export default function Insights() {
                   <div className="text-2xl font-bold text-cyan-400 mb-2">{role.role}</div>
                   <div className="text-slate-300 text-sm">Top Role</div>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-3">
-                  <div
-                    className="h-3 rounded-full transition-all duration-1000 bg-gradient-to-r from-cyan-400 to-blue-500"
-                    style={{ width: `${(role.count / maxRoleCount) * 100}%` }}
-                  />
-                </div>
+                <div
+                  className="h-3 rounded-full transition-all duration-1000 bg-gradient-to-r from-cyan-400 to-blue-500"
+                  style={{ width: `${(role.count / maxRoleCount) * 100}%` }}
+                />
               </motion.div>
             ))}
           </div>
-
-          
 
           {/* Year Summary Stats */}
           <motion.div className="mt-12" variants={itemVariants}>

@@ -5,8 +5,9 @@ interface CompanyCardProps {
   icon: React.ReactNode;
   name: string;
   domain: string;
-  status: "Open" | "Upcoming";
+  status: "Open" | "Open" | "Upcoming";
   packageLPA: number;
+  packageDisplay?: string; // Original package format from sheet
   roles: string[];
   eligibility: string;
 }
@@ -17,6 +18,7 @@ export const CompanyCard: FC<CompanyCardProps> = ({
   domain,
   status,
   packageLPA,
+  packageDisplay,
   roles,
   eligibility,
 }) => {
@@ -45,7 +47,9 @@ export const CompanyCard: FC<CompanyCardProps> = ({
       </div>
       <div className="bg-cyan-900/20 rounded-xl px-4 py-2 flex items-center gap-2 mb-2">
         <span className="text-xs text-slate-300 font-medium">Package</span>
-        <span className="text-2xl font-bold text-cyan-400 ml-2">{packageLPA} LPA</span>
+        <span className="text-2xl font-bold text-cyan-400 ml-2">
+          {packageDisplay || `${packageLPA} LPA`}
+        </span>
       </div>
       <div>
         <div className="font-semibold text-sm mb-1 flex items-center gap-2 text-white">

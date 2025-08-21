@@ -1,77 +1,43 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CompanyCard } from "@/components/CompanyCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-
-const companies = [
-  {
-    icon: <span role="img" aria-label="Google">🔍</span>,
-    name: "Google",
-    domain: "Technology",
-    status: "Upcoming",
-    packageLPA: 45,
-    roles: ["SDE", "Product Manager", "Data Scientist"],
-    eligibility: "CGPA: 8+",
-  },
-  {
-    icon: <span role="img" aria-label="Microsoft">💻</span>,
-    name: "Microsoft",
-    domain: "Technology",
-    status: "Open",
-    packageLPA: 42,
-    roles: ["SDE", "Program Manager"],
-    eligibility: "CGPA: 7.5+",
-  },
-  {
-    icon: <span role="img" aria-label="Amazon">📦</span>,
-    name: "Amazon",
-    domain: "E-commerce",
-    status: "Open",
-    packageLPA: 38,
-    roles: ["SDE", "Support Engineer"],
-    eligibility: "CGPA: 7+",
-  },
-  {
-    icon: <span role="img" aria-label="Apple">🍎</span>,
-    name: "Apple",
-    domain: "Technology",
-    status: "Upcoming",
-    packageLPA: 50,
-    roles: ["iOS Developer", "UI/UX Designer"],
-    eligibility: "CGPA: 8.5+",
-  },
-  {
-    icon: <span role="img" aria-label="Netflix">🎬</span>,
-    name: "Netflix",
-    domain: "Entertainment",
-    status: "Open",
-    packageLPA: 55,
-    roles: ["Backend Engineer", "ML Engineer"],
-    eligibility: "CGPA: 8+",
-  },
-  {
-    icon: <span role="img" aria-label="Meta">📱</span>,
-    name: "Meta",
-    domain: "Social Media",
-    status: "Open",
-    packageLPA: 48,
-    roles: ["Frontend Engineer", "Data Analyst"],
-    eligibility: "CGPA: 7.8+",
-  },
-];
+import { companiesApi, Company, CompaniesResponse } from "@/services/companiesApi";
 
 export default function CompanyDirectory() {
   const [search, setSearch] = useState("");
-  const [domain, setDomain] = useState("All Domains");
+  const [location, setLocation] = useState("All Locations");
   const [pkg, setPkg] = useState("All Packages");
+  const [companiesData, setCompaniesData] = useState<CompaniesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter logic (simple for mockup)
-  const filtered = companies.filter(c =>
+  // Fetch companies data on component mount
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await companiesApi.getCompanies(5); // Sheet #5
+        setCompaniesData(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch companies');
+        console.error('Error fetching companies:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
+  // Filter logic for real-time data
+  const filtered = companiesData?.companies?.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) &&
-    (domain === "All Domains" || c.domain === domain) &&
+    (location === "All Locations" || c.location === location) &&
     (pkg === "All Packages" || c.packageLPA.toString() === pkg)
-  );
+  ) || [];
 
   return (
     <div className="min-h-screen relative flex flex-col bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#0f172a] text-foreground overflow-x-hidden">
@@ -96,6 +62,32 @@ export default function CompanyDirectory() {
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-gradient-primary">Company Directory</h1>
             <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light">Explore companies, packages, and placement opportunities</p>
+            
+            {/* Refresh Button */}
+            {companiesData && (
+              <motion.button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const data = await companiesApi.refreshCache(5);
+                    setCompaniesData(data);
+                    setError(null);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to refresh data');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="mt-4 px-6 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-white transition-colors flex items-center gap-2 mx-auto"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Data
+              </motion.button>
+            )}
           </div>
           <motion.div
             className="bg-gradient-to-br from-[#232b47]/80 via-[#1a1f3a]/80 to-[#38bdf8]/10 border border-cyan-400/30 shadow-xl rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-4 mb-12 backdrop-blur-xl"
@@ -115,14 +107,13 @@ export default function CompanyDirectory() {
             </div>
             <select
               className="w-full max-w-xs px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select"
-              value={domain}
-              onChange={e => setDomain(e.target.value)}
+              value={location}
+              onChange={e => setLocation(e.target.value)}
             >
-              <option>All Domains</option>
-              <option>Technology</option>
-              <option>E-commerce</option>
-              <option>Entertainment</option>
-              <option>Social Media</option>
+              <option>All Locations</option>
+              {companiesData?.filters?.locations?.map(location => (
+                <option key={location} value={location}>{location}</option>
+              )) || []}
             </select>
             <select
               className="w-full max-w-xs px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select"
@@ -130,43 +121,99 @@ export default function CompanyDirectory() {
               onChange={e => setPkg(e.target.value)}
             >
               <option>All Packages</option>
-              <option>55</option>
-              <option>50</option>
-              <option>48</option>
-              <option>45</option>
-              <option>42</option>
-              <option>38</option>
+              {companiesData?.filters.packages.map(pkg => (
+                <option key={pkg} value={pkg.toString()}>{pkg} LPA</option>
+              ))}
             </select>
           </motion.div>
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-              },
-            }}
-          >
-            {filtered.map((c, i) => (
-              <motion.div
-                key={c.name}
-                initial={{ opacity: 0, y: 30, scale: 0.97 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                whileHover={{ scale: 1.02 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, type: "spring", bounce: 0.18 }}
-                className="h-full"
+          {/* Loading State */}
+          {loading && (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mb-4"></div>
+              <p className="text-cyan-300">Loading companies...</p>
+            </motion.div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="text-red-400 mb-4">⚠️ Error loading companies</div>
+              <p className="text-red-300 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg text-white transition-colors"
               >
-                <CompanyCard {...c} status={c.status as 'Open' | 'Upcoming'} />
+                Retry
+              </button>
+            </motion.div>
+          )}
+
+          {/* Companies Grid */}
+          {!loading && !error && (
+            <>
+              {/* Data Info */}
+              {companiesData && (
+                <motion.div
+                  className="text-center mb-6 text-sm text-cyan-300"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  
+                </motion.div>
+              )}
+
+              <motion.div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+                  },
+                }}
+              >
+                {filtered.map((c, i) => (
+                  <motion.div
+                    key={c.name}
+                    initial={{ opacity: 0, y: 30, scale: 0.97 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.5, type: "spring", bounce: 0.18 }}
+                    className="h-full"
+                  >
+                    <CompanyCard 
+                      icon={<span role="img" aria-label={c.name}>{c.icon}</span>}
+                      name={c.name}
+                      domain={c.domain}
+                      status={c.status}
+                      packageLPA={c.packageLPA}
+                      packageDisplay={c.packageDisplay}
+                      roles={c.roles}
+                      eligibility={c.eligibility}
+                    />
+                  </motion.div>
+                ))}
+                {filtered.length === 0 && (
+                  <div className="col-span-full text-center text-muted py-12">
+                    {search || location !== "All Locations" || pkg !== "All Packages" 
+                      ? "No companies match your filters." 
+                      : "No companies found in the data."}
+                  </div>
+                )}
               </motion.div>
-            ))}
-            {filtered.length === 0 && (
-              <div className="col-span-full text-center text-muted py-12">No companies found.</div>
-            )}
-          </motion.div>
+            </>
+          )}
         </div>
       </section>
       <Footer />

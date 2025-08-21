@@ -6,6 +6,53 @@ export interface CGPAData {
   students: number;
 }
 
+export interface CGPARangeData {
+  cgpa_range: string;
+  offers: number;
+  students: number;
+  avg_offers_per_student: number;
+  max_offers: number;
+  min_offers: number;
+  demand_level: string;
+  success_rate: number;
+  sample_data: Array<{
+    cgpa: number;
+    offers: number;
+  }>;
+}
+
+export interface CGPAAnalysis {
+  cgpa_ranges: CGPARangeData[];
+  insights: {
+    total_offers: number;
+    total_students: number;
+    overall_success_rate: number;
+    most_successful_range: {
+      range: string;
+      avg_offers: number;
+      total_offers: number;
+      students: number;
+    };
+    least_successful_range: {
+      range: string;
+      avg_offers: number;
+      total_offers: number;
+      students: number;
+    };
+    cgpa_trends: {
+      high_performers: CGPARangeData[];
+      moderate_performers: CGPARangeData[];
+    };
+    recommendations: string[];
+  };
+  summary: {
+    total_ranges: number;
+    ranges_analyzed: string[];
+    data_quality: string;
+    last_updated: string;
+  };
+}
+
 export interface CompanyData {
   name: string;
   hires: number;
@@ -96,6 +143,10 @@ class InsightsApiService {
 
   getRawCGPAData = async (): Promise<RawCGPAResponse> => {
     return this.request<RawCGPAResponse>('/api/insights/raw/cgpa');
+  }
+
+  getCGPAAnalysis = async (): Promise<CGPAAnalysis> => {
+    return this.request<CGPAAnalysis>('/api/insights/cgpa/analysis');
   }
 
   getSheetsMetadata = async (): Promise<SheetsMetadata> => {

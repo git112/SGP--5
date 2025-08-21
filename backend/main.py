@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest
 from signup.utils import (
     validate_email_domain,
@@ -18,11 +19,24 @@ _ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path=_ENV_PATH)
 
 from sheets_service import sheets_service
+from simple_rag_service import SimpleRAGService
+from companies_sheets_service import CompaniesSheetsService
 
 app = FastAPI()
 
 # Initialize auth service
 auth_service = AuthService()
+
+# Initialize RAG service for chatbot (Google Drive-based)
+# You can specify a Google Drive folder ID here, or leave None to search all accessible files
+GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID", None)
+rag_service = SimpleRAGService(drive_folder_id=GOOGLE_DRIVE_FOLDER_ID)
+
+# Initialize Companies Sheets service
+companies_service = CompaniesSheetsService()
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # CORS setup
 app.add_middleware(
@@ -233,6 +247,40 @@ async def get_raw_cgpa_data():
             detail += f" | root: {last_err}"
         raise HTTPException(status_code=500, detail=detail)
 
+@app.get("/api/insights/cgpa/analysis")
+async def get_cgpa_analysis():
+    """Get detailed CGPA analysis with offer insights by CGPA ranges"""
+    try:
+        data = sheets_service.get_insights_data(SPREADSHEET_ID)
+        if not data or 'cgpa_data' not in data:
+            raise HTTPException(status_code=404, detail="No CGPA data found")
+        
+        cgpa_data = data['cgpa_data']
+        cgpa_insights = data.get('cgpa_insights', {})
+        
+        # Format the response for better frontend consumption
+        analysis_response = {
+            'cgpa_ranges': cgpa_data,
+            'insights': cgpa_insights,
+            'summary': {
+                'total_ranges': len(cgpa_data),
+                'ranges_analyzed': [item['cgpa_range'] for item in cgpa_data],
+                'data_quality': 'high' if len(cgpa_data) == 4 else 'partial',
+                'last_updated': 'now'
+            }
+        }
+        
+        return analysis_response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        last_err = getattr(sheets_service, "last_error", "")
+        detail = f"Error fetching CGPA analysis: {str(e)}"
+        if last_err:
+            detail += f" | root: {last_err}"
+        raise HTTPException(status_code=500, detail=detail)
+
 @app.get("/api/sheets/metadata")
 async def get_sheets_metadata():
     """Get Google Sheets metadata"""
@@ -282,6 +330,40 @@ async def debug_values(range: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Debug values error: {str(e)}")
+
+# Chatbot RAG endpoint
+@app.post("/api/chat")
+async def chat_with_bot(request: dict):
+    """Chat endpoint for the RAG-based placement chatbot."""
+    try:
+        query = request.get("query", "").strip()
+        
+        if not query:
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        # Process the query using RAG service
+        response = rag_service.process_query(query)
+        
+        return {"answer": response}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+
+@app.get("/api/companies")
+async def get_companies(sheet_number: int = 5):
+    """Get companies data from Google Sheets for the company directory page."""
+    try:
+        # Get companies data from sheet #5 (or specified sheet)
+        companies_data = companies_service.get_companies_for_frontend(sheet_number)
+        
+        return companies_data
+        
+    except Exception as e:
+        logger.error(f"Error in companies endpoint: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while fetching companies data")
 
 if __name__ == "__main__":
     import uvicorn
