@@ -70,9 +70,8 @@ def setup_google_drive():
             
             print(f"\n🎉 Setup complete! Your system is ready to use folder: {folder_id}")
             print("\n📋 Next steps:")
-            print("1. Start Ollama: ollama serve")
-            print("2. Start the backend: python main.py")
-            print("3. Test the chatbot!")
+            print("1. Start the backend: python main.py")
+            print("2. Test the chatbot!")
             
         else:
             print("⚠️  No Excel/CSV files found in the specified folder")
@@ -90,13 +89,6 @@ def update_env_file(folder_id: str):
     env_file = ".env"
     env_content = f"""# Google Drive Configuration
 GOOGLE_DRIVE_FOLDER_ID={folder_id}
-
-# LLM Configuration
-USE_OLLAMA=true
-
-# Optional: External LLM API (if not using Ollama)
-# LLM_API_KEY=your_api_key_here
-# LLM_API_BASE=https://api.openai.com/v1
 """
     
     try:

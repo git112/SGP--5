@@ -9,7 +9,6 @@ import logging
 from typing import List, Dict, Any, Optional
 import pandas as pd
 from sentence_transformers import SentenceTransformer
-import ollama
 from dotenv import load_dotenv
 import numpy as np
 from drive_service import GoogleDriveService
@@ -32,25 +31,14 @@ class SimpleRAGService:
         self.documents = []
         self.embeddings = []
         
-        # Initialize LLM client
-        self.llm_client = self._initialize_llm()
+        # No local LLM client; generation falls back to templates
+        self.llm_client = None
         
         # Load data from Google Drive
         self._load_drive_data()
     
     def _initialize_llm(self):
-        """Initialize the LLM client."""
-        use_ollama = os.getenv("USE_OLLAMA", "true").lower() == "true"
-        
-        if use_ollama:
-            try:
-                ollama.list()
-                logger.info("Using Ollama for local LLM inference")
-                return "ollama"
-            except Exception as e:
-                logger.warning(f"Ollama not available: {e}")
-                return None
-        
+        """Deprecated: LLM initialization removed (no Ollama)."""
         return None
     
     def _load_drive_data(self):
@@ -210,12 +198,8 @@ class SimpleRAGService:
             # Construct the prompt
             prompt = self._construct_prompt(query, context_chunks)
             
-            # Generate response using LLM
-            if self.llm_client == "ollama":
-                response = self._generate_with_ollama(prompt)
-            else:
-                # Fallback response when no LLM is available
-                response = self._generate_fallback_response(query, context_chunks)
+            # No LLM configured; use fallback response
+            response = self._generate_fallback_response(query, context_chunks)
             
             return response
             
@@ -242,22 +226,7 @@ Answer:"""
         
         return prompt
     
-    def _generate_with_ollama(self, prompt: str) -> str:
-        """Generate response using local Ollama instance."""
-        try:
-            available_models = ollama.list()
-            model_name = "llama3" if "llama3" in [m['name'] for m in available_models['models']] else "mistral"
-            
-            response = ollama.chat(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            
-            return response['message']['content']
-            
-        except Exception as e:
-            logger.error(f"Error with Ollama: {e}")
-            return self._generate_fallback_response("", [])
+    # Ollama generation removed
     
     def _generate_fallback_response(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:
         """Generate a fallback response when no LLM is available."""

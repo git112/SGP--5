@@ -134,22 +134,16 @@ class CompaniesSheetsService:
             # Extract package information - handle your "Avg. Package" column
             package_lpa = self._extract_package(data, ['Avg. Package', 'PackageLPA', 'Package', 'Salary', 'LPA', 'Package (LPA)'])
             
-            # Extract domain/industry - use default since you don't have this column
-            domain = "Technology"  # Default domain since your sheet doesn't have this
-            
-            # Extract location
-            location = self._extract_value(data, ['Location', 'City', 'Address', 'HQ'])
-            
-            # Extract roles
+           
+            domain = "Technology"  
+            location = self._clean_location(self._extract_value(data, ['Location', 'City', 'Address', 'HQ']))
+         
             roles = self._extract_roles(data, ['Roles', 'Role', 'Positions', 'Job Roles'])
+         
+            eligibility = "CGPA: 7+"  
             
-            # Extract eligibility - use default since you don't have this column
-            eligibility = "CGPA: 7+"  # Default eligibility since your sheet doesn't have this
-            
-            # Determine status based on package or other criteria
             status = self._determine_status(package_lpa, data)
             
-            # Create company icon based on name
             icon = self._generate_company_icon(company_name)
             
             company = {
@@ -162,7 +156,7 @@ class CompaniesSheetsService:
                 "roles": roles,
                 "eligibility": eligibility.strip() if eligibility else "CGPA: 7+",
                 "location": location.strip() if location else "N/A",
-                "raw_data": data  # Keep raw data for debugging
+                "raw_data": data  
             }
             
             return company
@@ -178,6 +172,34 @@ class CompaniesSheetsService:
                 return str(data[key]).strip()
         return ""
     
+    def _clean_location(self, location: str) -> str:
+        """Clean location name by removing brackets and duplicates."""
+        if not location or location.lower() in ['n/a', 'null', 'undefined', '']:
+            return "N/A"
+        
+        # Remove anything in brackets (including the brackets)
+        import re
+        cleaned = re.sub(r'\s*\([^)]*\)', '', location)
+        
+        # Remove anything in square brackets
+        cleaned = re.sub(r'\s*\[[^\]]*\]', '', cleaned)
+        
+        # Clean up extra whitespace
+        cleaned = cleaned.strip()
+        
+        # Handle common location formats
+        if ',' in cleaned:
+            # Take the first part (usually the city)
+            cleaned = cleaned.split(',')[0].strip()
+        
+        # Remove common suffixes that might cause duplicates
+        suffixes_to_remove = [' city', ' district', ' state', ' india', ' gujarat']
+        for suffix in suffixes_to_remove:
+            if cleaned.lower().endswith(suffix):
+                cleaned = cleaned[:-len(suffix)].strip()
+        
+        return cleaned if cleaned else "N/A"
+    
     def _extract_package(self, data: Dict[str, str], possible_keys: List[str]) -> int:
         """Extract package value and convert to integer."""
         for key in possible_keys:
@@ -187,9 +209,9 @@ class CompaniesSheetsService:
                     if not value or value.lower() in ['n/a', 'null', 'undefined', '']:
                         continue
                     
-                    # Handle ranges like "2.65-4" or "3-4"
+                   
                     if '-' in value:
-                        # Split range and take average
+                       
                         parts = value.split('-')
                         if len(parts) == 2:
                             try:
@@ -200,9 +222,9 @@ class CompaniesSheetsService:
                             except (ValueError, TypeError):
                                 continue
                     
-                    # Handle single values like "14.5" or "5.7"
+                   
                     try:
-                        # Remove non-numeric characters except decimal point
+                       
                         numeric_value = ''.join(c for c in value if c.isdigit() or c == '.')
                         if numeric_value:
                             return int(float(numeric_value))
@@ -285,13 +307,13 @@ class CompaniesSheetsService:
     def _sort_companies(self, companies: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Sort companies by package (highest first) and other criteria."""
         def sort_key(company):
-            # Primary sort: package (highest first)
+            
             package = company.get('packageLPA', 0)
             
-            # Secondary sort: status (Open companies first)
+           
             status_priority = 0 if company.get('status') == 'Open' else 1
             
-            # Tertiary sort: company name (alphabetical)
+           
             name = company.get('name', '').lower()
             
             return (-package, status_priority, name)
@@ -312,9 +334,15 @@ class CompaniesSheetsService:
         try:
             companies = self.get_companies_data(sheet_number)
             
-            # Get unique locations for filter dropdown
-            locations = list(set(company.get('location', 'N/A') for company in companies if company.get('location') and company.get('location') != 'N/A'))
-            locations.sort()
+            # Get unique locations for filter dropdown (case-insensitive)
+            location_set = set()
+            for company in companies:
+                location = company.get('location', 'N/A')
+                if location and location != 'N/A':
+                    # Normalize location name (lowercase for comparison)
+                    location_set.add(location.strip())
+            
+            locations = sorted(list(location_set))
             
             # Get unique packages for filter dropdown
             packages = list(set(company.get('packageLPA', 0) for company in companies if company.get('packageLPA', 0) > 0))

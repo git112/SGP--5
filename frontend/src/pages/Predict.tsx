@@ -44,8 +44,8 @@ const Predict = () => {
     // Simulate API call
     setTimeout(() => {
       setPrediction({
-        readiness: '65-80%',
-        topCompanies: ['TCS', 'Infosys', 'Wipro'],
+        readiness: '35-50%',
+        topCompanies: ['Crest Infosystems', 'TatvaSoft', 'Fuzzy Cloud'],
         skillsToImprove: ['Data Structures', 'System Design', 'Communication']
       });
       setIsLoading(false);
@@ -314,24 +314,7 @@ const Predict = () => {
                 </Button>
               </div>
 
-              {/* Question Section */}
-              <div className="text-center">
-                <div className="relative">
-                  {/* Curved connecting line from above */}
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-px h-8 bg-gradient-to-b from-cyan-400/50 to-transparent"></div>
-                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
-                </div>
-                <Card className="card glass shadow-xl backdrop-blur-md border border-white/10 mt-8 max-w-md mx-auto">
-                  <CardContent className="p-6">
-                    <Button 
-                      onClick={() => console.log('Generate Question')}
-                      className="btn-primary w-full text-lg py-4"
-                    >
-                      Question
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
+              
 
               {/* Improvement Plan Details */}
               <Card className="card glass shadow-xl backdrop-blur-md border border-white/10">

@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
+import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 // Mock data for demonstration
@@ -51,6 +52,7 @@ const codingQuestions = [
 ];
 
 export default function InterviewPage() {
+  const navigate = useNavigate();
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   // Form state
@@ -119,6 +121,8 @@ export default function InterviewPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#0f172a] text-foreground overflow-x-hidden">
+      <Header />
+      
       {/* Animated homepage-style background overlays */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419]/60 via-transparent to-[#1a1f3a]/80 opacity-90"></div>
@@ -134,15 +138,7 @@ export default function InterviewPage() {
         <div className="absolute bottom-40 left-32 w-2.5 h-2.5 bg-[#36b5d3]/40 rounded-full animate-ping shadow-lg shadow-[#36b5d3]/20" style={{ animationDelay: '2s' }}></div>
         <div className="absolute bottom-20 right-20 w-2 h-2 bg-[#14788f]/45 rounded-full animate-ping shadow-lg shadow-[#14788f]/20" style={{ animationDelay: '3s' }}></div>
       </div>
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-slate-900/95 border-b border-slate-700/30 backdrop-blur-xl">
-        <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          <h1 className="text-xl font-bold text-cyan-400 tracking-tight drop-shadow-glow">Interview Prep</h1>
-          <Button variant="cosmic" size="lg" onClick={() => setModalOpen(true)}>
-            Submit Your Experience
-          </Button>
-        </div>
-      </div>
+      
       {/* Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-lg card border-primary/20 slide-up bg-white/10 backdrop-blur-xl shadow-2xl">
@@ -191,7 +187,7 @@ export default function InterviewPage() {
         </DialogContent>
       </Dialog>
       {/* Main Content - Two Column Layout */}
-      <div className="container mx-auto py-10 px-4 max-w-7xl relative z-10">
+      <div className="container mx-auto pt-10 pb-10 px-4 max-w-7xl relative z-10">
         <motion.div 
           className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
@@ -201,9 +197,15 @@ export default function InterviewPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight drop-shadow-glow">
             Interview Questions & Coding Prep
           </h2>
-          <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light">
+          <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light mb-8">
             Practice real interview questions, filter by company or type, and share your experience to help your juniors!
           </p>
+          <Button 
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-lg"
+            onClick={() => setModalOpen(true)}
+          >
+            Submit Your Experience
+          </Button>
         </motion.div>
         <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 relative">
           {/* Vertical Divider for desktop */}
@@ -234,7 +236,7 @@ export default function InterviewPage() {
                   </SelectContent>
                 </Select>
                 <Button variant="hero" size="lg" className="flex-1 md:max-w-xs shadow-xl" onClick={handleRandomQuestion}>
-                  Test Your Confidence!
+                  Random Question
                 </Button>
               </div>
             </div>
@@ -242,7 +244,7 @@ export default function InterviewPage() {
             <AnimatePresence>
               {showRandom && randomQuestion && (
                 <motion.div
-                  key={randomQuestion.text}
+                  key={`random-${String(randomQuestion.category)}-${String(randomQuestion.round)}-${String(randomQuestion.text)}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
@@ -261,7 +263,7 @@ export default function InterviewPage() {
                       <CardContent>
                         <div className="text-lg font-medium mb-2">{randomQuestion.text}</div>
                         <div className="flex gap-2 flex-wrap">
-                          {randomQuestion.tags.map((tag, i) => <Badge key={i} variant="outline">{tag}</Badge>)}
+                          {randomQuestion.tags.map((tag: string) => <Badge key={`rand-${String(randomQuestion.text)}-${tag}`} variant="outline">{tag}</Badge>)}
                         </div>
                       </CardContent>
                       <CardFooter>
@@ -272,51 +274,36 @@ export default function InterviewPage() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {/* Question Cards Grid */}
+            {/* Question List - Q&A style, no company names, no cards */}
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 gap-6"
+              className="space-y-4"
               initial="hidden"
               animate="visible"
               variants={{
                 hidden: { opacity: 0 },
                 visible: {
                   opacity: 1,
-                  transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+                  transition: { staggerChildren: 0.05, delayChildren: 0.1 },
                 },
               }}
             >
-              {filteredHRTech.map((q, i) => (
+              {filteredHRTech.map((q) => (
                 <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30, scale: 0.97 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.5, type: "spring", bounce: 0.18 }}
-                  className="h-[220px]"
+                  key={`${q.category}-${q.round}-${q.text}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 0.25 }}
+                  className="bg-white/10 backdrop-blur-xl border border-cyan-400/10 rounded-lg px-4 py-3"
                 >
-                  <Card className="border-cyan-400/20 bg-white/10 backdrop-blur-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col justify-between">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <span className="text-cyan-400 font-bold">{q.company}</span>
-                        <Badge variant="secondary">{q.category}</Badge>
-                        <span className="text-xs text-muted-foreground ml-2">{q.round}</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-base font-medium mb-2">{q.text}</div>
-                      <div className="flex gap-2 flex-wrap">
-                        {q.tags.map((tag, i) => <Badge key={i} variant="outline">{tag}</Badge>)}
-                      </div>
-                    </CardContent>
-                    <CardFooter className="justify-end gap-2">
-                      <Button size="icon" variant="ghost" title="Upvote"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 9V5a3 3 0 00-6 0v4M5 15h14l-1.34 5.36A2 2 0 0115.7 22H8.3a2 2 0 01-1.96-1.64L5 15z" /></svg></Button>
-                      <Button size="icon" variant="ghost" title="Save"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z" /></svg></Button>
-                    </CardFooter>
-                  </Card>
+                  <div className="text-base md:text-lg font-medium leading-relaxed text-slate-100">
+                    {q.text}
+                  </div>
                 </motion.div>
               ))}
-              {filteredHRTech.length === 0 && <div className="col-span-full text-center text-muted py-12">No questions found.</div>}
+              {filteredHRTech.length === 0 && (
+                <div className="text-center text-muted py-12">No questions found.</div>
+              )}
             </motion.div>
           </div>
           {/* Right: Coding Questions */}
@@ -359,16 +346,21 @@ export default function InterviewPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCoding.map((q, i) => (
-                    <tr key={i} className="bg-white/10 backdrop-blur-xl border border-purple-400/10 rounded-xl transition-all duration-200 hover:bg-purple-400/10 group">
+                  {filteredCoding.map((q) => (
+                    <tr key={`${q.title}-${q.company}`} className="bg-white/10 backdrop-blur-xl border border-purple-400/10 rounded-xl transition-all duration-200 hover:bg-purple-400/10 group">
                       <td className="px-3 py-2 font-medium text-purple-200 whitespace-nowrap">{q.title}</td>
                       <td className="px-3 py-2">
                         <div className="flex gap-1 flex-wrap">
-                          {q.tags.map((tag, j) => <Badge key={j} variant="outline" className="border-purple-400/30 text-purple-200 group-hover:border-purple-400/60 group-hover:text-purple-100">{tag}</Badge>)}
+                          {q.tags.map((tag) => <Badge key={`${q.title}-${tag}`} variant="outline" className="border-purple-400/30 text-purple-200 group-hover:border-purple-400/60 group-hover:text-purple-100">{tag}</Badge>)}
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <Badge variant={q.difficulty === 'Easy' ? 'secondary' : q.difficulty === 'Medium' ? 'default' : 'destructive'} className="text-xs px-2 py-1">{q.difficulty}</Badge>
+                        {(() => {
+                          let variant: 'secondary' | 'default' | 'destructive' = 'default';
+                          if (q.difficulty === 'Easy') variant = 'secondary';
+                          else if (q.difficulty === 'Hard') variant = 'destructive';
+                          return <Badge variant={variant} className="text-xs px-2 py-1">{q.difficulty}</Badge>;
+                        })()}
                       </td>
                       <td className="px-3 py-2">
                         <a href={q.link} target="_blank" rel="noopener noreferrer" className="text-purple-300 font-medium underline underline-offset-2 group-hover:text-purple-200 transition-colors">Practice</a>
@@ -382,6 +374,14 @@ export default function InterviewPage() {
               </table>
             </div>
           </div>
+        </div>
+      </div>
+      {/* Global CTA below both sections */}
+      <div className="container mx-auto px-4 pb-12">
+        <div className="flex justify-center">
+          <Button variant="hero" size="lg" className="shadow-xl" onClick={() => navigate('/competency-test')}>
+            Test Your Confidence!
+          </Button>
         </div>
       </div>
       <Footer />

@@ -4,7 +4,7 @@ from uuid import uuid4
 from dotenv import load_dotenv
 
 load_dotenv()
-MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGO_URI")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "govcheck_ai")
 print("Connecting to MongoDB at:", MONGO_URI)
 print("Using database:", DATABASE_NAME)

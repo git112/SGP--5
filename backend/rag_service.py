@@ -9,7 +9,6 @@ import logging
 from typing import List, Dict, Any, Optional
 import chromadb
 from sentence_transformers import SentenceTransformer
-import ollama
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -34,37 +33,11 @@ class RAGService:
             logger.error(f"Error connecting to ChromaDB: {e}")
             raise
         
-        # Initialize LLM client (Ollama for local development)
-        self.llm_client = self._initialize_llm()
+        # No local LLM client; external API not implemented yet
+        self.llm_client = None
     
     def _initialize_llm(self):
-        """Initialize the LLM client based on configuration."""
-        # Check if using Ollama (local) or external API
-        use_ollama = os.getenv("USE_OLLAMA", "true").lower() == "true"
-        
-        if use_ollama:
-            try:
-                # Test Ollama connection
-                ollama.list()
-                logger.info("Using Ollama for local LLM inference")
-                return "ollama"
-            except Exception as e:
-                logger.warning(f"Ollama not available: {e}")
-                logger.info("Falling back to external API")
-                use_ollama = False
-        
-        if not use_ollama:
-            # External API configuration (OpenAI, Groq, etc.)
-            api_key = os.getenv("LLM_API_KEY")
-            api_base = os.getenv("LLM_API_BASE")
-            
-            if not api_key:
-                logger.warning("No LLM API key found. Please set LLM_API_KEY environment variable.")
-                return None
-            
-            logger.info(f"Using external LLM API: {api_base or 'OpenAI'}")
-            return "external"
-        
+        """Deprecated: LLM initialization removed (no Ollama)."""
         return None
     
     def retrieve_context(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
@@ -103,14 +76,8 @@ class RAGService:
             # Construct the prompt
             prompt = self._construct_prompt(query, context_chunks)
             
-            # Generate response using LLM
-            if self.llm_client == "ollama":
-                response = self._generate_with_ollama(prompt)
-            elif self.llm_client == "external":
-                response = self._generate_with_external_api(prompt)
-            else:
-                # Fallback response when no LLM is available
-                response = self._generate_fallback_response(query, context_chunks)
+            # No LLM configured; use fallback response
+            response = self._generate_fallback_response(query, context_chunks)
             
             return response
             
@@ -139,29 +106,10 @@ Answer:"""
         
         return prompt
     
-    def _generate_with_ollama(self, prompt: str) -> str:
-        """Generate response using local Ollama instance."""
-        try:
-            # Use Llama3 model if available, otherwise fallback to any available model
-            available_models = ollama.list()
-            model_name = "llama3" if "llama3" in [m['name'] for m in available_models['models']] else "mistral"
-            
-            response = ollama.chat(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            
-            return response['message']['content']
-            
-        except Exception as e:
-            logger.error(f"Error with Ollama: {e}")
-            return self._generate_fallback_response("", [])
+    # Ollama generation removed
     
     def _generate_with_external_api(self, prompt: str) -> str:
-        """Generate response using external API (OpenAI, Groq, etc.)."""
-        # This is a placeholder for external API integration
-        # You can implement OpenAI, Groq, or other API calls here
-        logger.info("External API integration not implemented yet")
+        logger.info("External API integration removed")
         return self._generate_fallback_response("", [])
     
     def _generate_fallback_response(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:

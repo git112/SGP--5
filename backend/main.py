@@ -19,18 +19,17 @@ _ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path=_ENV_PATH)
 
 from sheets_service import sheets_service
-from simple_rag_service import SimpleRAGService
 from companies_sheets_service import CompaniesSheetsService
+from interview_api import router as interview_router
+from excel_rag_service import excel_rag_service
 
 app = FastAPI()
 
 # Initialize auth service
 auth_service = AuthService()
 
-# Initialize RAG service for chatbot (Google Drive-based)
-# You can specify a Google Drive folder ID here, or leave None to search all accessible files
-GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID", None)
-rag_service = SimpleRAGService(drive_folder_id=GOOGLE_DRIVE_FOLDER_ID)
+# Initialize Excel-based RAG service
+excel_rag_service.initialize_rag()
 
 # Initialize Companies Sheets service
 companies_service = CompaniesSheetsService()
@@ -46,6 +45,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount competency test API (interview endpoints, Python port of Node service)
+app.include_router(interview_router)
 
 # Google Sheets configuration
 SPREADSHEET_ID = os.getenv("GOOGLE_SPREADSHEET_ID", "your-spreadsheet-id-here")
@@ -112,7 +114,7 @@ def forgot_password(request: ForgotPasswordRequest):
         reset_token = auth_service.create_password_reset_token(request.email)
         
         # Create reset URL (frontend will handle this)
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8081")
         reset_url = f"{frontend_url}/reset-password?token={reset_token}"
         
         # Send email
@@ -341,8 +343,8 @@ async def chat_with_bot(request: dict):
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
-        # Process the query using RAG service
-        response = rag_service.process_query(query)
+        # Process the query using Excel RAG service
+        response = excel_rag_service.process_query(query)
         
         return {"answer": response}
         
@@ -350,6 +352,39 @@ async def chat_with_bot(request: dict):
         raise
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+
+# Streaming chat endpoint
+@app.post("/api/chat/stream")
+async def chat_with_bot_stream(request: dict):
+    """Streaming chat endpoint for real-time responses."""
+    from fastapi.responses import StreamingResponse
+    import json
+    
+    try:
+        query = request.get("query", "").strip()
+        
+        if not query:
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        def generate_stream():
+            try:
+                for chunk in excel_rag_service.process_query_stream(query):
+                    yield f"data: {json.dumps({'content': chunk})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/plain",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in streaming chat endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
 @app.get("/api/companies")

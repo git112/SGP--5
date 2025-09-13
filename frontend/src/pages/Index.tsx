@@ -3,7 +3,6 @@ import { HeroSection } from "@/components/HeroSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
 import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
-import { FloatingBot } from "@/components/FloatingBot";
 
 const Index = () => {
   return (
@@ -13,7 +12,6 @@ const Index = () => {
       <FeaturesSection />
       <FAQSection />
       <Footer />
-      <FloatingBot />
     </div>
   );
 };

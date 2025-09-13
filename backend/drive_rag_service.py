@@ -9,7 +9,6 @@ import logging
 from typing import List, Dict, Any, Optional
 import pandas as pd
 from sentence_transformers import SentenceTransformer
-import ollama
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
@@ -34,8 +33,8 @@ class GoogleDriveRAGService:
         # Initialize Google Drive service
         self._authenticate_drive()
         
-        # Initialize LLM client (Ollama for local development)
-        self.llm_client = self._initialize_llm()
+        # No local LLM client
+        self.llm_client = None
         
         # In-memory storage for embeddings (you can replace this with ChromaDB later)
         self.documents = []
@@ -60,18 +59,7 @@ class GoogleDriveRAGService:
             raise
     
     def _initialize_llm(self):
-        """Initialize the LLM client based on configuration."""
-        use_ollama = os.getenv("USE_OLLAMA", "true").lower() == "true"
-        
-        if use_ollama:
-            try:
-                ollama.list()
-                logger.info("Using Ollama for local LLM inference")
-                return "ollama"
-            except Exception as e:
-                logger.warning(f"Ollama not available: {e}")
-                return None
-        
+        """Deprecated: LLM initialization removed (no Ollama)."""
         return None
     
     def list_drive_files(self, folder_id: str = None, file_types: List[str] = None) -> List[Dict[str, Any]]:
@@ -302,12 +290,8 @@ class GoogleDriveRAGService:
             # Construct the prompt
             prompt = self._construct_prompt(query, context_chunks)
             
-            # Generate response using LLM
-            if self.llm_client == "ollama":
-                response = self._generate_with_ollama(prompt)
-            else:
-                # Fallback response when no LLM is available
-                response = self._generate_fallback_response(query, context_chunks)
+            # No LLM configured; use fallback response
+            response = self._generate_fallback_response(query, context_chunks)
             
             return response
             
@@ -334,22 +318,7 @@ Answer:"""
         
         return prompt
     
-    def _generate_with_ollama(self, prompt: str) -> str:
-        """Generate response using local Ollama instance."""
-        try:
-            available_models = ollama.list()
-            model_name = "llama3" if "llama3" in [m['name'] for m in available_models['models']] else "mistral"
-            
-            response = ollama.chat(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            
-            return response['message']['content']
-            
-        except Exception as e:
-            logger.error(f"Error with Ollama: {e}")
-            return self._generate_fallback_response("", [])
+    # Ollama generation removed
     
     def _generate_fallback_response(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:
         """Generate a fallback response when no LLM is available."""
