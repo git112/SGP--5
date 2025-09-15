@@ -1,18 +1,21 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest
+from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest, SendOTPRequest, VerifyOTPRequest, OTPResponse, LoginWithOTPRequest
 from signup.utils import (
     validate_email_domain,
     validate_password,
     hash_password,
-    verify_password
+    verify_password,
+    get_user_type
 )
 from signup.database import get_user_collection
 from signup.auth_service import AuthService
+from signup.otp_service import OTPService
 import os
 from dotenv import load_dotenv
 from typing import Optional
+from datetime import datetime, timedelta
 
 # Load environment from backend/.env regardless of CWD
 _ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
@@ -27,6 +30,9 @@ app = FastAPI()
 
 # Initialize auth service
 auth_service = AuthService()
+
+# Initialize OTP service
+otp_service = OTPService()
 
 # Initialize Excel-based RAG service
 excel_rag_service.initialize_rag()
@@ -70,7 +76,7 @@ def signup(user: UserCreate):
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
     if not validate_email_domain(user.email):
-        raise HTTPException(status_code=400, detail="Only IT department emails allowed")
+        raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
 
     if not validate_password(user.password):
         raise HTTPException(status_code=400, detail="Password must have at least one number and one special character")
@@ -79,13 +85,84 @@ def signup(user: UserCreate):
     if users.find_one({"email": user.email}):
         raise HTTPException(status_code=400, detail="User already exists")
 
-    hashed_pw = hash_password(user.password)
-    users.insert_one({"email": user.email, "password": hashed_pw})
+    # Send OTP for email verification
+    result = otp_service.send_otp(user.email)
+    
+    if result["success"]:
+        return OTPResponse(
+            message="OTP sent to your email for verification. Please verify your email to complete registration.",
+            masked_email=result["masked_email"],
+            expires_in=result["expires_in"]
+        )
+    else:
+        if "retry_after" in result:
+            raise HTTPException(
+                status_code=429, 
+                detail=result["message"],
+                headers={"Retry-After": str(result["retry_after"])}
+            )
+        else:
+            raise HTTPException(status_code=500, detail=result["message"])
 
-    return {"message": "User registered successfully"}
+@app.post("/verify-signup")
+def verify_signup(request: dict):
+    """Verify OTP and complete user registration"""
+    try:
+        email = request.get("email")
+        password = request.get("password")
+        otp = request.get("otp")
+        
+        if not all([email, password, otp]):
+            raise HTTPException(status_code=400, detail="Email, password, and OTP are required")
+        
+        # Validate email format first
+        if not validate_email_domain(email):
+            raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+        
+        # Verify OTP first
+        otp_result = otp_service.verify_otp(email, otp)
+        if not otp_result["success"]:
+            raise HTTPException(status_code=400, detail=otp_result["message"])
+        
+        # Check if user still exists (in case they tried to signup again)
+        users = get_user_collection()
+        if users.find_one({"email": email}):
+            raise HTTPException(status_code=400, detail="User already exists")
+        
+        # Validate password
+        if not validate_password(password):
+            raise HTTPException(status_code=400, detail="Password must have at least one number and one special character")
+        
+        # Create user account
+        hashed_pw = hash_password(password)
+        user_type = get_user_type(email)
+        
+        users.insert_one({
+            "email": email, 
+            "password": hashed_pw,
+            "user_type": user_type,
+            "otp_verified": True,
+            "created_at": datetime.utcnow()
+        })
+        
+        print(f"✅ New user registered: {email}")
+        
+        return {
+            "message": "Account created successfully! You can now login with your email and password.",
+            "user_type": user_type
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in signup verification: {str(e)}")
 
 @app.post("/login")
 def login(user: UserLogin):
+    # Validate email format first
+    if not validate_email_domain(user.email):
+        raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+    
     users = get_user_collection()
     user_doc = users.find_one({"email": user.email})
     if not user_doc:
@@ -95,7 +172,112 @@ def login(user: UserLogin):
 
     # Generate JWT token
     token = auth_service.generate_jwt_token(user.email)
-    return {"message": "Login successful", "token": token, "email": user.email}
+    user_type = user_doc.get("user_type", get_user_type(user.email))
+    return {"message": "Login successful", "token": token, "email": user.email, "user_type": user_type}
+
+@app.post("/send-otp")
+def send_otp(request: SendOTPRequest):
+    """Send OTP to user's email for login verification"""
+    try:
+        # Validate email format first
+        if not validate_email_domain(request.email):
+            raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+        
+        # Send OTP
+        result = otp_service.send_otp(request.email)
+        
+        if result["success"]:
+            return OTPResponse(
+                message=result["message"],
+                masked_email=result["masked_email"],
+                expires_in=result["expires_in"]
+            )
+        else:
+            if "retry_after" in result:
+                raise HTTPException(
+                    status_code=429, 
+                    detail=result["message"],
+                    headers={"Retry-After": str(result["retry_after"])}
+                )
+            else:
+                raise HTTPException(status_code=500, detail=result["message"])
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sending OTP: {str(e)}")
+
+@app.post("/verify-otp")
+def verify_otp(request: VerifyOTPRequest):
+    """Verify OTP code"""
+    try:
+        # Validate email format first
+        if not validate_email_domain(request.email):
+            raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+        
+        # Verify OTP
+        result = otp_service.verify_otp(request.email, request.otp)
+        
+        if result["success"]:
+            return {"message": result["message"], "verified": True}
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error verifying OTP: {str(e)}")
+
+@app.post("/login-with-otp")
+def login_with_otp(request: LoginWithOTPRequest):
+    """Login using email and OTP (no password required)"""
+    try:
+        # Validate email format first
+        if not validate_email_domain(request.email):
+            raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+        
+        # Verify OTP first
+        otp_result = otp_service.verify_otp(request.email, request.otp)
+        if not otp_result["success"]:
+            raise HTTPException(status_code=400, detail=otp_result["message"])
+        
+        # Check if user exists, if not create them
+        users = get_user_collection()
+        user_doc = users.find_one({"email": request.email})
+        
+        if not user_doc:
+            # Create new user with OTP verification
+            user_type = get_user_type(request.email)
+            users.insert_one({
+                "email": request.email,
+                "user_type": user_type,
+                "otp_verified": True,
+                "created_at": datetime.utcnow()
+            })
+            print(f"✅ New user created: {request.email}")
+        else:
+            # Update existing user
+            users.update_one(
+                {"email": request.email},
+                {"$set": {"otp_verified": True, "last_login": datetime.utcnow()}}
+            )
+            print(f"✅ Existing user verified: {request.email}")
+
+        # Generate JWT token
+        token = auth_service.generate_jwt_token(request.email)
+        user_type = user_doc.get("user_type", get_user_type(request.email)) if user_doc else get_user_type(request.email)
+        
+        return {
+            "message": "Login successful", 
+            "token": token, 
+            "email": request.email, 
+            "user_type": user_type
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in OTP login: {str(e)}")
 
 # Removed Google OAuth endpoint
 
@@ -103,6 +285,10 @@ def login(user: UserLogin):
 def forgot_password(request: ForgotPasswordRequest):
     """Send password reset email"""
     try:
+        # Validate email format first
+        if not validate_email_domain(request.email):
+            raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+        
         # Check if user exists
         users = get_user_collection()
         user_doc = users.find_one({"email": request.email})
@@ -166,7 +352,8 @@ def get_current_user_info(current_user: str = Depends(get_current_user)):
         "email": user_doc["email"],
         "name": user_doc.get("name", ""),
         "picture": user_doc.get("picture", ""),
-        "oauth_provider": user_doc.get("oauth_provider", "email")
+        "oauth_provider": user_doc.get("oauth_provider", "email"),
+        "user_type": user_doc.get("user_type", get_user_type(user_doc["email"]))
     }
 
 # Google Sheets API endpoints

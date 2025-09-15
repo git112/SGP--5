@@ -5,6 +5,7 @@ interface User {
   name?: string;
   picture?: string;
   oauth_provider?: string;
+  user_type?: 'student' | 'd2d_student' | 'faculty';
 }
 
 interface AuthContextType {
@@ -13,10 +14,14 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<{ message: string; masked_email: string; expires_in: number }>;
+  verifySignup: (email: string, password: string, otp: string) => Promise<{ message: string; user_type: string }>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   updateUserProfile: (userData: Partial<User>) => void;
+  sendOTP: (email: string) => Promise<{ message: string; masked_email: string; expires_in: number }>;
+  verifyOTP: (email: string, otp: string) => Promise<{ message: string; verified: boolean }>;
+  loginWithOTP: (email: string, otp: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -101,7 +106,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
       console.log('Login successful, token received');
-      const userData: User = { email: data.email };
+      const userData: User = { 
+        email: data.email,
+        user_type: data.user_type
+      };
       saveAuth(data.token, userData);
     } catch (error) {
       console.error('Login error:', error);
@@ -134,11 +142,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorMessage);
       }
 
-      console.log('Signup successful, attempting auto-login');
-      // Auto-login after successful signup
-      await login(email, password);
+      const signupData = await response.json();
+      console.log('OTP sent for signup verification');
+      return {
+        message: signupData.message,
+        masked_email: signupData.masked_email,
+        expires_in: signupData.expires_in
+      };
     } catch (error) {
       console.error('Signup error:', error);
+      throw error;
+    }
+  };
+
+  const verifySignup = async (email: string, password: string, otp: string) => {
+    try {
+      console.log('Attempting signup verification for:', email);
+      
+      const response = await fetch(`${API_BASE_URL}/verify-signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, otp })
+      });
+
+      console.log('Signup verification response status:', response.status);
+
+      if (!response.ok) {
+        let errorMessage = 'Signup verification failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const verifyData = await response.json();
+      console.log('Signup verification successful');
+      return {
+        message: verifyData.message,
+        user_type: verifyData.user_type
+      };
+    } catch (error) {
+      console.error('Signup verification error:', error);
       throw error;
     }
   };
@@ -195,6 +242,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendOTP = async (email: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to send OTP');
+      }
+
+      const data = await response.json();
+      return {
+        message: data.message,
+        masked_email: data.masked_email,
+        expires_in: data.expires_in
+      };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (email: string, otp: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'OTP verification failed');
+      }
+
+      const data = await response.json();
+      return {
+        message: data.message,
+        verified: data.verified
+      };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const loginWithOTP = async (email: string, otp: string) => {
+    try {
+      console.log('Attempting OTP login for:', email);
+      
+      const response = await fetch(`${API_BASE_URL}/login-with-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+
+      console.log('OTP login response status:', response.status);
+
+      if (!response.ok) {
+        let errorMessage = 'OTP login failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('OTP login successful, token received');
+      const userData: User = { 
+        email: data.email,
+        user_type: data.user_type
+      };
+      saveAuth(data.token, userData);
+    } catch (error) {
+      console.error('OTP login error:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     clearAuth();
   };
@@ -207,9 +337,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login, 
       logout, 
       signup, 
+      verifySignup,
       forgotPassword,
       resetPassword,
-      updateUserProfile
+      updateUserProfile,
+      sendOTP,
+      verifyOTP,
+      loginWithOTP
     }}>
       {children}
     </AuthContext.Provider>

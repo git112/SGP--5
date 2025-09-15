@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { validateCharusatEmail, getEmailValidationMessage, getEmailExamples } from "@/utils/emailValidation";
  
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
@@ -19,19 +20,26 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [isSignupOTP, setIsSignupOTP] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [resetToken, setResetToken] = useState("");
+  const [otp, setOtp] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
+  const [otpExpiresIn, setOtpExpiresIn] = useState(0);
+  const [otpTimer, setOtpTimer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailError, setEmailError] = useState("");
 
-  const { login, signup, forgotPassword, resetPassword } = useAuth();
+  const { login, signup, verifySignup, forgotPassword, resetPassword, sendOTP, verifyOTP, loginWithOTP } = useAuth();
   const navigate = useNavigate();
 
   const emailRef = useRef<HTMLInputElement>(null);
@@ -40,11 +48,32 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const newPasswordRef = useRef<HTMLInputElement>(null);
   const confirmNewPasswordRef = useRef<HTMLInputElement>(null);
   const forgotEmailRef = useRef<HTMLInputElement>(null);
+  const otpRef = useRef<HTMLInputElement>(null);
+
+  // OTP Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [otpTimer]);
 
   useEffect(() => {
     if (open) {
       setTimeout(() => {
-        if (showResetPassword && newPasswordRef.current) {
+        if (showOTPVerification && otpRef.current) {
+          otpRef.current.focus();
+        } else if (showResetPassword && newPasswordRef.current) {
           newPasswordRef.current.focus();
         } else if (showForgotPassword && forgotEmailRef.current) {
           forgotEmailRef.current.focus();
@@ -53,7 +82,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         }
       }, 100);
     }
-  }, [open, showResetPassword, showForgotPassword]);
+  }, [open, showOTPVerification, showResetPassword, showForgotPassword]);
 
   // Removed Google OAuth initialization
 
@@ -72,18 +101,61 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setEmailError("");
     setLoading(true);
+    
+    // Validate email format before submission
+    if (!validateCharusatEmail(email)) {
+      setEmailError(getEmailValidationMessage());
+      setLoading(false);
+      return;
+    }
     
     try {
       if (isSignUp) {
-        await signup(email, password);
-        setSuccess("Account created successfully!");
+        // For signup, send OTP for email verification
+        const otpResult = await signup(email, password);
+        setMaskedEmail(otpResult.masked_email);
+        setOtpExpiresIn(otpResult.expires_in);
+        setOtpTimer(otpResult.expires_in);
+        setIsSignupOTP(true);
+        setShowOTPVerification(true);
+        setSuccess(`OTP sent to ${otpResult.masked_email}`);
+      } else {
+        // For login, send OTP instead of using password
+        const otpResult = await sendOTP(email);
+        setMaskedEmail(otpResult.masked_email);
+        setOtpExpiresIn(otpResult.expires_in);
+        setOtpTimer(otpResult.expires_in);
+        setIsSignupOTP(false);
+        setShowOTPVerification(true);
+        setSuccess(`OTP sent to ${otpResult.masked_email}`);
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOTPVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    
+    try {
+      if (isSignupOTP) {
+        // For signup, verify OTP and complete registration
+        const result = await verifySignup(email, password, otp);
+        setSuccess("Account created successfully! You can now login with your email and password.");
         setTimeout(() => {
           onClose();
           navigate("/insights");
-        }, 1000);
+        }, 2000);
       } else {
-        await login(email, password);
+        // For login, verify OTP and login in one step
+        await loginWithOTP(email, otp);
         setSuccess("Login successful!");
         setTimeout(() => {
           onClose();
@@ -91,7 +163,33 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         }, 1000);
       }
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || "OTP verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    
+    try {
+      let otpResult;
+      if (isSignupOTP) {
+        // For signup, use the signup endpoint
+        otpResult = await signup(email, password);
+      } else {
+        // For login, use the sendOTP endpoint
+        otpResult = await sendOTP(email);
+      }
+      
+      setMaskedEmail(otpResult.masked_email);
+      setOtpExpiresIn(otpResult.expires_in);
+      setOtpTimer(otpResult.expires_in);
+      setSuccess(`New OTP sent to ${otpResult.masked_email}`);
+    } catch (err: any) {
+      setError(err.message || "Failed to resend OTP");
     } finally {
       setLoading(false);
     }
@@ -103,7 +201,15 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setEmailError("");
     setLoading(true);
+    
+    // Validate email format before submission
+    if (!validateCharusatEmail(email)) {
+      setEmailError(getEmailValidationMessage());
+      setLoading(false);
+      return;
+    }
     
     try {
       const message = await forgotPassword(email);
@@ -149,10 +255,17 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
+    setOtp("");
+    setMaskedEmail("");
+    setOtpExpiresIn(0);
+    setOtpTimer(0);
     setError("");
     setSuccess("");
+    setEmailError("");
     setShowForgotPassword(false);
     setShowResetPassword(false);
+    setShowOTPVerification(false);
+    setIsSignupOTP(false);
   };
 
   const handleClose = () => {
@@ -172,6 +285,91 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       }
     }
   };
+
+  if (showOTPVerification) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-md card border-primary/20 slide-up login-modal">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-foreground">
+              {isSignupOTP ? "Complete Registration" : "Email Verification"}
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              {isSignupOTP 
+                ? `Enter the 6-digit code sent to ${maskedEmail} to complete your registration`
+                : `Enter the 6-digit code sent to ${maskedEmail}`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-6 p-6" onSubmit={handleOTPVerification} onKeyDown={handleKeyDown}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="otp" className="text-foreground">Verification Code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                  maxLength={6}
+                  ref={otpRef}
+                  tabIndex={1}
+                  className="text-center text-2xl tracking-widest"
+                  placeholder="000000"
+                />
+                <div className="text-center text-sm text-muted-foreground">
+                  {otpTimer > 0 ? (
+                    <span>Code expires in {Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}</span>
+                  ) : (
+                    <span className="text-red-500">Code has expired</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+            {success && <div className="text-green-500 text-sm text-center">{success}</div>}
+            
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowOTPVerification(false)}
+                className="flex-1"
+                disabled={loading}
+                tabIndex={3}
+              >
+                Back
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1" 
+                disabled={loading || otp.length !== 6 || otpTimer === 0}
+                tabIndex={2}
+              >
+                {loading 
+                  ? (isSignupOTP ? "Creating Account..." : "Verifying...") 
+                  : (isSignupOTP ? "Complete Registration" : "Verify & Login")
+                }
+              </Button>
+            </div>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={loading || otpTimer > 0}
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded px-2 py-1 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                tabIndex={4}
+              >
+                {otpTimer > 0 ? `Resend in ${otpTimer}s` : "Resend Code"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (showResetPassword) {
     return (
@@ -306,7 +504,9 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   required
                   ref={forgotEmailRef}
                   tabIndex={1}
+                  className={emailError ? "border-red-500" : ""}
                 />
+                {emailError && <div className="text-red-500 text-sm">{emailError}</div>}
               </div>
             </div>
             
@@ -342,7 +542,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
               {isSignUp ? "Create Account" : "Welcome Back"}
             </DialogTitle>
             <DialogDescription className="text-center text-muted-foreground">
-              {isSignUp ? "Create your account to get started" : "Sign in to your account"}
+              {isSignUp ? "Create your account with CHARUSAT email (OTP verification required)" : "Sign in with your CHARUSAT email (OTP verification required)"}
             </DialogDescription>
           </DialogHeader>
         
@@ -366,11 +566,17 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   ref={emailRef}
-                  className="pl-10"
+                  className={`pl-10 ${emailError ? "border-red-500" : ""}`}
                   tabIndex={1}
                   aria-describedby="login-error"
                   autoComplete="email"
                 />
+              </div>
+              {emailError && <div className="text-red-500 text-sm">{emailError}</div>}
+              <div className="text-xs text-gray-500">
+                <div className="mb-1">Valid formats:</div>
+                <div>Any email ending with @charusat.edu.in or @charusat.ac.in</div>
+                <div>Examples: john@charusat.edu.in, mary@charusat.ac.in, 21it101@charusat.edu.in</div>
               </div>
             </div>
             
@@ -461,7 +667,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
             tabIndex={isSignUp ? 7 : 5}
             style={{ pointerEvents: 'auto' }}
           >
-            {loading ? (isSignUp ? "Creating..." : "Signing in...") : (isSignUp ? "Create Account" : "Sign In")}
+            {loading ? (isSignUp ? "Sending OTP..." : "Sending OTP...") : (isSignUp ? "Send OTP" : "Send OTP")}
           </Button>
           
           {/* Removed Google OAuth UI */}
