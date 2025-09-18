@@ -17,6 +17,8 @@ import FloatingChatbot from "@/components/FloatingChatbot";
 
 const queryClient = new QueryClient();
 
+console.log("API URL:", import.meta.env.VITE_API_URL);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

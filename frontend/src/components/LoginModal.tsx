@@ -39,7 +39,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
 
-  const { login, signup, verifySignup, forgotPassword, resetPassword, sendOTP, verifyOTP, loginWithOTP } = useAuth();
+  const { login, signup, verifySignup, sendOTP, resetPasswordWithOTP } = useAuth();
   const navigate = useNavigate();
 
   const emailRef = useRef<HTMLInputElement>(null);
@@ -52,7 +52,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
   // OTP Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (otpTimer > 0) {
       interval = setInterval(() => {
         setOtpTimer((prev) => {
@@ -64,7 +64,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       }, 1000);
     }
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) clearInterval(interval as number);
     };
   }, [otpTimer]);
 
@@ -86,16 +86,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
 
   // Removed Google OAuth initialization
 
-  // Get reset token from URL if present
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (token) {
-      setResetToken(token);
-      setShowResetPassword(true);
-      setShowForgotPassword(false);
-    }
-  }, []);
+  // No token-based reset in UI; using OTP-based reset flow
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,14 +113,13 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         setShowOTPVerification(true);
         setSuccess(`OTP sent to ${otpResult.masked_email}`);
       } else {
-        // For login, send OTP instead of using password
-        const otpResult = await sendOTP(email);
-        setMaskedEmail(otpResult.masked_email);
-        setOtpExpiresIn(otpResult.expires_in);
-        setOtpTimer(otpResult.expires_in);
-        setIsSignupOTP(false);
-        setShowOTPVerification(true);
-        setSuccess(`OTP sent to ${otpResult.masked_email}`);
+        // For login, authenticate directly
+        await login(email, password);
+        setSuccess("Login successful!");
+        setTimeout(() => {
+          onClose();
+          navigate("/insights");
+        }, 800);
       }
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -154,13 +144,9 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           navigate("/insights");
         }, 2000);
       } else {
-        // For login, verify OTP and login in one step
-        await loginWithOTP(email, otp);
-        setSuccess("Login successful!");
-        setTimeout(() => {
-          onClose();
-          navigate("/insights");
-        }, 1000);
+        // Forgot password flow: OTP verification and prompt to reset
+        setShowOTPVerification(false);
+        setShowResetPassword(true);
       }
     } catch (err: any) {
       setError(err.message || "OTP verification failed");
@@ -180,7 +166,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         // For signup, use the signup endpoint
         otpResult = await signup(email, password);
       } else {
-        // For login, use the sendOTP endpoint
+        // For forgot password flow, use the sendOTP endpoint
         otpResult = await sendOTP(email);
       }
       
@@ -195,8 +181,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     }
   };
 
-  // Removed Google OAuth handlers
-
+  // Forgot password flow: email -> OTP -> reset
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -212,11 +197,16 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     }
     
     try {
-      const message = await forgotPassword(email);
-      setSuccess(message || "Password reset email sent!");
+      const otpResult = await sendOTP(email);
+      setMaskedEmail(otpResult.masked_email);
+      setOtpExpiresIn(otpResult.expires_in);
+      setOtpTimer(otpResult.expires_in);
+      setIsSignupOTP(false);
       setShowForgotPassword(false);
+      setShowOTPVerification(true);
+      setSuccess(`OTP sent to ${otpResult.masked_email}`);
     } catch (err: any) {
-      setError(err.message || "Failed to send reset email");
+      setError(err.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -235,14 +225,15 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     setLoading(true);
     
     try {
-      const message = await resetPassword(resetToken, newPassword);
+      // Use OTP-based reset
+      const message = await resetPasswordWithOTP(email, otp, newPassword);
       setSuccess(message || "Password reset successfully!");
       setTimeout(() => {
         setShowResetPassword(false);
         setShowForgotPassword(false);
         setNewPassword("");
         setConfirmNewPassword("");
-        setResetToken("");
+        setOtp("");
       }, 2000);
     } catch (err: any) {
       setError(err.message || "Password reset failed");
@@ -386,15 +377,28 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           <form className="space-y-6 p-6" onSubmit={handleResetPassword} onKeyDown={handleKeyDown}>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="resetToken" className="text-foreground">Reset Token</Label>
+                <Label htmlFor="resetEmail" className="text-foreground">Email</Label>
                 <Input
-                  id="resetToken"
-                  type="text"
-                  value={resetToken}
-                  onChange={(e) => setResetToken(e.target.value)}
+                  id="resetEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="Paste token from email link"
                   tabIndex={0}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="resetOtp" className="text-foreground">OTP</Label>
+                <Input
+                  id="resetOtp"
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                  maxLength={6}
+                  className="text-center tracking-widest"
+                  tabIndex={1}
+                  placeholder="000000"
                 />
               </div>
               <div className="space-y-2">
@@ -453,7 +457,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
             {success && <div className="text-green-500 text-sm text-center">{success}</div>}
             
             <div className="flex gap-3">
-              <Button
+              <Button 
                 type="button"
                 variant="outline"
                 onClick={() => setShowResetPassword(false)}
@@ -542,7 +546,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
               {isSignUp ? "Create Account" : "Welcome Back"}
             </DialogTitle>
             <DialogDescription className="text-center text-muted-foreground">
-              {isSignUp ? "Create your account with CHARUSAT email (OTP verification required)" : "Sign in with your CHARUSAT email (OTP verification required)"}
+              {isSignUp ? "Create your account with CHARUSAT email (OTP verification required)" : "Sign in with your CHARUSAT email and password"}
             </DialogDescription>
           </DialogHeader>
         
@@ -647,7 +651,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => { setShowResetPassword(true); setShowForgotPassword(false); }}
+                onClick={() => { setShowForgotPassword(true); setShowOTPVerification(false); setShowResetPassword(false); setError(""); setSuccess(""); }}
                 className="text-sm text-cyan-400 hover:text-cyan-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 rounded px-2 py-1 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
                 tabIndex={isSignUp ? 6 : 4}
                 style={{ pointerEvents: 'auto' }}
@@ -667,7 +671,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
             tabIndex={isSignUp ? 7 : 5}
             style={{ pointerEvents: 'auto' }}
           >
-            {loading ? (isSignUp ? "Sending OTP..." : "Sending OTP...") : (isSignUp ? "Send OTP" : "Send OTP")}
+            {loading ? (isSignUp ? "Sending OTP..." : "Signing in...") : (isSignUp ? "Send OTP" : "Sign in")}
           </Button>
           
           {/* Removed Google OAuth UI */}

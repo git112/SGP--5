@@ -18,6 +18,7 @@ interface AuthContextType {
   verifySignup: (email: string, password: string, otp: string) => Promise<{ message: string; user_type: string }>;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
+  resetPasswordWithOTP: (email: string, otp: string, newPassword: string) => Promise<void>;
   updateUserProfile: (userData: Partial<User>) => void;
   sendOTP: (email: string) => Promise<{ message: string; masked_email: string; expires_in: number }>;
   verifyOTP: (email: string, otp: string) => Promise<{ message: string; verified: boolean }>;
@@ -234,6 +235,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPasswordWithOTP = async (email: string, otp: string, newPassword: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/reset-password-with-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email,
+          otp,
+          new_password: newPassword,
+          confirm_password: newPassword 
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Password reset failed');
+      }
+
+      const data = await response.json();
+      return data.message;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const updateUserProfile = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
@@ -340,6 +366,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       verifySignup,
       forgotPassword,
       resetPassword,
+      resetPasswordWithOTP,
       updateUserProfile,
       sendOTP,
       verifyOTP,

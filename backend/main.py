@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest, SendOTPRequest, VerifyOTPRequest, OTPResponse, LoginWithOTPRequest
+from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest, SendOTPRequest, VerifyOTPRequest, OTPResponse, LoginWithOTPRequest, ResetPasswordWithOTPRequest
 from signup.utils import (
     validate_email_domain,
     validate_password,
@@ -337,6 +337,43 @@ def reset_password(request: ResetPasswordRequest):
         
         return {"message": "Password reset successfully"}
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.post("/reset-password-with-otp")
+def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
+    """Reset password using an email + OTP flow (no token links)."""
+    try:
+        if request.new_password != request.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+
+        if not validate_password(request.new_password):
+            raise HTTPException(status_code=400, detail="Password must have at least one number and one special character")
+
+        # Validate email format first
+        if not validate_email_domain(request.email):
+            raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
+
+        # Verify OTP
+        result = otp_service.verify_otp(request.email, request.otp)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["message"])
+
+        # Update password in database
+        users = get_user_collection()
+        user_doc = users.find_one({"email": request.email})
+        if not user_doc:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        hashed_pw = hash_password(request.new_password)
+        users.update_one(
+            {"email": request.email},
+            {"$set": {"password": hashed_pw}}
+        )
+
+        return {"message": "Password reset successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
