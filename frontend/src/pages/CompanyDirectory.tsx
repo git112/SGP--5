@@ -39,6 +39,23 @@ export default function CompanyDirectory() {
     (pkg === "All Packages" || c.packageLPA.toString() === pkg)
   ) || [];
 
+  // Determine numeric sort value using the highest figure from package range or fallback
+  const getPackageSortValue = (company: Company): number => {
+    // Prefer parsing from packageDisplay to capture ranges like "5.4-7.2"
+    const display = company.packageDisplay?.toString() ?? "";
+    const nums = (display.match(/\d+(?:\.\d+)?/g) || []).map(n => parseFloat(n));
+    if (nums.length > 0) {
+      // Use the highest number in the display range
+      return Math.max(...nums);
+    }
+    // Fallback to packageLPA if it's a finite number
+    const lpa = Number(company.packageLPA);
+    return Number.isFinite(lpa) ? lpa : -Infinity; // push N/A to bottom
+  };
+
+  // Sort by highest package first using derived value
+  const sortedByPackageDesc = [...filtered].sort((a, b) => getPackageSortValue(b) - getPackageSortValue(a));
+
   return (
     <div className="min-h-screen relative flex flex-col bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#0f172a] text-foreground overflow-x-hidden">
       <Header />
@@ -182,7 +199,7 @@ export default function CompanyDirectory() {
                   },
                 }}
               >
-                {filtered.map((c, i) => (
+                {sortedByPackageDesc.map((c, i) => (
                   <motion.div
                     key={c.name}
                     initial={{ opacity: 0, y: 30, scale: 0.97 }}
@@ -201,10 +218,11 @@ export default function CompanyDirectory() {
                       packageDisplay={c.packageDisplay}
                       roles={c.roles}
                       eligibility={c.eligibility}
+                      location={c.location}
                     />
                   </motion.div>
                 ))}
-                {filtered.length === 0 && (
+                {sortedByPackageDesc.length === 0 && (
                   <div className="col-span-full text-center text-muted py-12">
                     {search || location !== "All Locations" || pkg !== "All Packages" 
                       ? "No companies match your filters." 

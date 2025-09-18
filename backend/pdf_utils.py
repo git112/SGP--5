@@ -37,3 +37,7 @@ def extract_text_from_pdf_bytes(data: bytes) -> str:
 
 
 
+
+
+
+

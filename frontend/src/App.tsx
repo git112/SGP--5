@@ -11,7 +11,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import CompanyDirectory from "./pages/CompanyDirectory";
 import InterviewPage from "./pages/InterviewPage";
 import CompetencyTest from "./pages/CompetencyTest";
-import Predict from "./pages/Predict";
+import ResumeBuilder from "./pages/ResumeBuilder";
 import About from "./pages/AboutPage";
 import FloatingChatbot from "@/components/FloatingChatbot";
 
@@ -33,7 +33,7 @@ const App = () => (
 
             <Route path='/interview' element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
             <Route path='/competency-test' element={<ProtectedRoute><CompetencyTest /></ProtectedRoute>} />
-            <Route path='/predict' element={<ProtectedRoute><Predict /></ProtectedRoute>} />
+            <Route path='/resume-builder' element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
             <Route path='/about' element={<ProtectedRoute><About /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -5,11 +5,12 @@ interface CompanyCardProps {
   icon: React.ReactNode;
   name: string;
   domain: string;
-  status: "Open" | "Open" | "Upcoming";
+  status: "Open" | "Upcoming";
   packageLPA: number;
   packageDisplay?: string; // Original package format from sheet
   roles: string[];
   eligibility: string;
+  location: string;
 }
 
 export const CompanyCard: FC<CompanyCardProps> = ({
@@ -21,6 +22,7 @@ export const CompanyCard: FC<CompanyCardProps> = ({
   packageDisplay,
   roles,
   eligibility,
+  location,
 }) => {
   return (
     <motion.div
@@ -36,11 +38,6 @@ export const CompanyCard: FC<CompanyCardProps> = ({
         <div>
           <div className="font-semibold text-lg text-white flex items-center gap-2">
             {name}
-            {status === "Open" ? (
-              <span className="ml-2 badge-modern bg-green-900/30 text-green-400 border-green-400/30">Open</span>
-            ) : (
-              <span className="ml-2 badge-modern bg-blue-900/30 text-blue-400 border-blue-400/30">Upcoming</span>
-            )}
           </div>
           <div className="text-xs text-slate-300 font-medium mt-0.5">{domain}</div>
         </div>
@@ -65,10 +62,13 @@ export const CompanyCard: FC<CompanyCardProps> = ({
       </div>
       <div>
         <div className="font-semibold text-sm mb-1 flex items-center gap-2 text-white">
-          <span className="i-lucide-graduation-cap text-base" /> Eligibility
+          <span className="i-lucide-map-pin text-base" /> Location
         </div>
-        <div className="text-sm text-slate-300 font-medium">{eligibility}</div>
+        <div className="flex flex-wrap gap-2">
+          <span className="badge-modern bg-cyan-900/30 text-cyan-300 border-cyan-400/30">{location}</span>
+        </div>
       </div>
+      {/* Eligibility removed as per requirement */}
     </motion.div>
   );
 }; 
