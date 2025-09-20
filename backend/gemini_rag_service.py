@@ -243,32 +243,37 @@ class GeminiRAGService:
             return []
     
     def _generate_response_with_gemini(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:
-        """Generate response using Gemini 1.5 Flash with retrieved context."""
+        """Generate response using Gemini 1.5 Flash with PlaceMentor AI template."""
         try:
             # Check if Gemini is available
             if self.llm_model is None:
                 return self._generate_fallback_response(query, context_chunks)
             
-            # Extract actual data from context chunks
-            actual_data = self._extract_actual_data(context_chunks, query)
+            # Format context for the prompt template
+            context = self._format_context_for_placementor_template(context_chunks)
             
-            # Create prompt for Gemini
-            prompt = f"""You are a friendly and helpful placement assistant. Answer the user's question using ONLY the actual data provided below.
+            # Create prompt using the SYSTEM BEHAVIOR template
+            prompt = f"""[SYSTEM BEHAVIOR]
+You are a factual data retrieval bot for the Placementor AI platform. Your sole purpose is to extract and present information from the `[CONTEXT]` block to answer the user's `[QUESTION]`.
 
-ACTUAL DATA FROM EXCEL SHEETS:
-{actual_data}
+[CORE DIRECTIVES]
+- **Strict Grounding:** Your entire response must be derived exclusively from the provided `[CONTEXT]`. Do not infer, guess, or use any information outside of it.
+- **Conciseness:** Respond in the most direct and brief manner possible. Avoid conversational filler like "Sure, I can help with that!" or "I hope this helps!".
+- **Data Unavailability:** If the `[CONTEXT]` does not contain the answer to the `[QUESTION]`, your only valid response is: "That information is not available in the dataset."
 
-User Question: {query}
+---
 
-IMPORTANT RULES:
-- Use ONLY the data provided above - do not make up or guess any numbers
-- If the data doesn't have the exact answer, say "Based on the available data..." 
-- Be short, polite, clear and friendly
-- Provide specific numbers only if they exist in the data
-- If asking about highest package and data shows "8 LPA", say exactly "8 LPA"
-- Keep responses concise (2-3 sentences max)
+[CONTEXT]:
+{context}
 
-Answer:"""
+---
+
+[QUESTION]:
+{query}
+
+---
+
+[RESPONSE]:"""
             
             # Generate response with Gemini
             response = self.llm_model.generate_content(prompt)
@@ -279,18 +284,112 @@ Answer:"""
             logger.error(f"Error generating response with Gemini: {e}")
             return self._generate_fallback_response(query, context_chunks)
     
-    def _generate_fallback_response(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:
-        """Generate fallback response when Gemini is not available."""
+    def _format_context_for_placementor_template(self, context_chunks: List[Dict[str, Any]]) -> str:
+        """Format context chunks for the PlaceMentor AI template."""
         if not context_chunks:
-            return "I don't have enough information to answer your question. Please try rephrasing or ask about a different topic."
+            return "No relevant data found in the placement sheets."
         
-        # Simple template-based response
-        context_text = "\n\n".join([
-            f"• {chunk['text'][:200]}..." 
-            for chunk in context_chunks[:3]
-        ])
+        # Extract key information from context chunks
+        context_parts = []
+        for chunk in context_chunks[:3]:  # Limit to top 3 most relevant chunks
+            text = chunk.get('text', '')
+            lines = text.split('\n')
+            
+            # Filter for relevant lines with key data indicators
+            relevant_lines = []
+            for line in lines:
+                if any(keyword in line.lower() for keyword in ['package', 'lpa', 'company', 'cgpa', 'placed', 'role', 'salary', 'year']):
+                    relevant_lines.append(line.strip())
+            
+            if relevant_lines:
+                context_parts.extend(relevant_lines)
         
-        return f"Based on the placement data, here's what I found:\n\n{context_text}\n\nNote: For more detailed responses, please configure the GEMINI_API_KEY in your environment variables."
+        if not context_parts:
+            return "No relevant data found in the placement sheets."
+        
+        return "\n".join(context_parts[:10])  # Limit to 10 most relevant lines
+    
+    def _generate_fallback_response(self, query: str, context_chunks: List[Dict[str, Any]]) -> str:
+        """Generate fallback response when Gemini is not available using SYSTEM BEHAVIOR template."""
+        if not context_chunks:
+            return "That information is not available in the dataset."
+        
+        # Format context for fallback response
+        context = self._format_context_for_placementor_template(context_chunks)
+        
+        # Use the same logic as ExcelRAGService for consistency
+        query_lower = query.lower()
+        
+        # Special handling for highest package queries
+        if any(word in query_lower for word in ['highest', 'maximum', 'top', 'best']):
+            if any(word in query_lower for word in ['package', 'salary', 'lpa']):
+                return self._find_highest_package_from_context(context)
+        
+        # Extract key facts from context
+        key_facts = self._extract_key_facts_from_context_fallback(context, query)
+        if key_facts:
+            return key_facts
+        
+        return "That information is not available in the dataset."
+    
+    def _find_highest_package_from_context(self, context: str) -> str:
+        """Find highest package from context for fallback response."""
+        import re
+        
+        packages = []
+        for match in re.finditer(r'(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)', context.lower()):
+            try:
+                val = float(match.group(1))
+                if 0 < val < 200:  # Reasonable package range
+                    packages.append(val)
+            except:
+                continue
+        
+        if packages:
+            return f"The highest package mentioned is {max(packages):.1f} LPA."
+        
+        return "That information is not available in the dataset."
+    
+    def _extract_key_facts_from_context_fallback(self, context: str, question: str) -> str:
+        """Extract key facts from context for fallback response."""
+        import re
+        
+        question_lower = question.lower()
+        
+        # For package-related questions
+        if any(word in question_lower for word in ['package', 'salary', 'lpa']):
+            packages = []
+            for match in re.finditer(r'(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)', context.lower()):
+                try:
+                    val = float(match.group(1))
+                    if 0 < val < 200:  # Reasonable package range
+                        packages.append(val)
+                except:
+                    continue
+            
+            if packages:
+                if 'average' in question_lower:
+                    return f"The average package mentioned is {sum(packages)/len(packages):.1f} LPA."
+                else:
+                    return f"Packages mentioned range from {min(packages):.1f} to {max(packages):.1f} LPA."
+        
+        # For company-related questions
+        if any(word in question_lower for word in ['company', 'companies']):
+            companies = []
+            for line in context.split('\n'):
+                if 'company' in line.lower() and any(char.isalpha() for char in line):
+                    words = line.split()
+                    for i, word in enumerate(words):
+                        if 'company' in word.lower():
+                            if i > 0:
+                                companies.append(words[i-1])
+                            break
+            
+            if companies:
+                unique_companies = list(set(companies))[:5]
+                return f"Companies mentioned: {', '.join(unique_companies)}."
+        
+        return None
     
     def _extract_actual_data(self, context_chunks: List[Dict[str, Any]], query: str) -> str:
         """Extract actual data from context chunks based on the query."""

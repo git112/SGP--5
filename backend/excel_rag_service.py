@@ -224,53 +224,151 @@ class ExcelRAGService:
             return content[:800]  # Return first 800 chars if no specific matches
     
     def _generate_response(self, query: str, relevant_docs: list) -> str:
-        """Generate a more intelligent response based on query and relevant documents"""
-        query_lower = query.lower()
+        """Generate a concise response using the PlaceMentor AI prompt template."""
+        # Use the new prompt template format
+        context = self._format_context_for_prompt(relevant_docs)
+        return self._generate_with_placementor_template(query, context)
+    
+    def _format_context_for_prompt(self, relevant_docs: list) -> str:
+        """Format relevant documents as context for the prompt template."""
+        if not relevant_docs:
+            return "No relevant data found in the placement sheets."
         
-        # Special handling for specific query types
+        # Extract key information from documents
+        context_parts = []
+        for doc in relevant_docs[:3]:  # Limit to top 3 most relevant docs
+            # Clean up the document content
+            lines = doc.split('\n')
+            relevant_lines = []
+            
+            for line in lines:
+                # Include lines with key data indicators
+                if any(keyword in line.lower() for keyword in ['package', 'lpa', 'company', 'cgpa', 'placed', 'role', 'salary']):
+                    relevant_lines.append(line.strip())
+            
+            if relevant_lines:
+                context_parts.extend(relevant_lines)
+        
+        return "\n".join(context_parts[:10])  # Limit to 10 most relevant lines
+    
+    def _generate_with_placementor_template(self, question: str, context: str) -> str:
+        """Generate response using the SYSTEM BEHAVIOR template format."""
+        query_lower = question.lower()
+        
+        # Special handling for highest package queries across all data
         if any(word in query_lower for word in ['highest', 'maximum', 'top', 'best']):
             if any(word in query_lower for word in ['package', 'salary', 'lpa']):
-                return self._find_highest_package(relevant_docs)
-            elif any(word in query_lower for word in ['company', 'companies']):
-                return self._find_top_companies(relevant_docs)
+                return self._find_highest_package_global(query_lower)
         
-        if any(word in query_lower for word in ['average', 'mean']):
-            return self._calculate_average(relevant_docs, query_lower)
+        # Year-specific queries
+        if any(word in query_lower for word in ['2023', '2022', '2021', '2024', '2025', 'year-wise', 'year wise', 'by year', 'per year']):
+            return self._filter_by_year([], query_lower)
         
-        if any(word in query_lower for word in ['2023', '2022', '2021', '2024']):
-            return self._filter_by_year(relevant_docs, query_lower)
+        # If we have context, provide a concise answer
+        if context and context != "No relevant data found in the placement sheets.":
+            # Extract key facts from context
+            key_facts = self._extract_key_facts_from_context(context, question)
+            if key_facts:
+                return key_facts
         
-        # Default response
-        context = "\n\n".join(relevant_docs[:3])  # Limit to top 3 docs
-        return f"Based on the placement data, here's what I found:\n\n{context}"
+        # If no relevant context found - use the new system behavior response
+        return "That information is not available in the dataset."
     
-    def _find_highest_package(self, docs: list) -> str:
-        """Find the highest package from the documents"""
-        max_package = 0
-        best_company = ""
-        best_year = ""
+    def _extract_key_facts_from_context(self, context: str, question: str) -> str:
+        """Extract key facts from context to answer the question concisely."""
+        import re
         
-        for doc in docs:
-            lines = doc.split('\n')
-            for line in lines:
-                if 'package' in line.lower() or 'lpa' in line.lower():
-                    # Extract package value
-                    import re
-                    package_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)', line.lower())
-                    if package_match:
-                        package_val = float(package_match.group(1))
-                        if package_val > max_package:
-                            max_package = package_val
-                            best_company = line
-                            # Try to extract year
-                            year_match = re.search(r'(20\d{2})', line)
+        question_lower = question.lower()
+        
+        # For package-related questions
+        if any(word in question_lower for word in ['package', 'salary', 'lpa']):
+            packages = []
+            for match in re.finditer(r'(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)', context.lower()):
+                try:
+                    val = float(match.group(1))
+                    if 0 < val < 200:  # Reasonable package range
+                        packages.append(val)
+                except:
+                    continue
+            
+            if packages:
+                if 'highest' in question_lower or 'maximum' in question_lower:
+                    return f"The highest package mentioned is {max(packages):.1f} LPA."
+                elif 'average' in question_lower:
+                    return f"The average package mentioned is {sum(packages)/len(packages):.1f} LPA."
+                else:
+                    return f"Packages mentioned range from {min(packages):.1f} to {max(packages):.1f} LPA."
+        
+        # For company-related questions
+        if any(word in question_lower for word in ['company', 'companies']):
+            companies = []
+            for line in context.split('\n'):
+                if 'company' in line.lower() and any(char.isalpha() for char in line):
+                    # Extract company name (simple extraction)
+                    words = line.split()
+                    for i, word in enumerate(words):
+                        if 'company' in word.lower():
+                            if i > 0:
+                                companies.append(words[i-1])
+                            break
+            
+            if companies:
+                unique_companies = list(set(companies))[:5]  # Limit to 5 companies
+                return f"Companies mentioned: {', '.join(unique_companies)}."
+        
+        # For general questions, provide a brief summary
+        lines = context.split('\n')
+        relevant_lines = [line for line in lines if any(keyword in line.lower() for keyword in ['package', 'company', 'placed', 'cgpa'])]
+        
+        if relevant_lines:
+            return f"Based on the data: {relevant_lines[0]}."
+        
+        return None
+    
+    def _find_highest_package_global(self, query_lower: str) -> str:
+        """Find the highest package across ALL loaded sheets. Supports year-wise if asked."""
+        import re
+
+        # Detect if user asked year-wise
+        wants_year_wise = any(kw in query_lower for kw in ['year-wise', 'year wise', 'by year', 'per year'])
+
+        # Scan all documents for packages
+        max_overall = 0.0
+        max_overall_year = None
+        year_to_max: Dict[str, float] = {}
+
+        for doc in self.documents:
+            text = doc.get("content", "")
+            for line in text.split('\n'):
+                low = line.lower()
+                if 'package' in low or 'lpa' in low:
+                    # Extract year and package
+                    year_match = re.search(r'(20\d{2})', line)
+                    pkg_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)', low)
+                    if pkg_match:
+                        try:
+                            val = float(pkg_match.group(1))
+                        except Exception:
+                            continue
+                        if 0 < val < 200:
                             if year_match:
-                                best_year = year_match.group(1)
-        
-        if max_package > 0:
-            return f"Based on the placement data, the highest package found is **{max_package} LPA**.\n\nDetails:\n{best_company}\n\nYear: {best_year if best_year else 'Not specified'}"
-        else:
-            return f"Based on the placement data:\n\n" + "\n\n".join(docs[:2])
+                                y = year_match.group(1)
+                                year_to_max[y] = max(year_to_max.get(y, 0.0), val)
+                            if val > max_overall:
+                                max_overall = val
+                                max_overall_year = year_match.group(1) if year_match else max_overall_year
+
+        if wants_year_wise and year_to_max:
+            # Build concise year-wise summary (top 4 years by year)
+            parts = [f"{y}: {val:.1f} LPA" for y, val in sorted(year_to_max.items())]
+            return "Highest package (year-wise): " + "; ".join(parts[:8])
+
+        if max_overall > 0:
+            if max_overall_year:
+                return f"Highest package: {max_overall:.1f} LPA (in {max_overall_year})."
+            return f"Highest package: {max_overall:.1f} LPA."
+
+        return "That information is not available in the dataset."
     
     def _find_top_companies(self, docs: list) -> str:
         """Find top companies from the documents"""
@@ -282,32 +380,65 @@ class ExcelRAGService:
                     companies.append(line)
         
         if companies:
-            return f"Based on the placement data, here are the companies:\n\n" + "\n\n".join(companies[:5])
-        else:
-            return f"Based on the placement data:\n\n" + "\n\n".join(docs[:2])
+            # Return concise list, capped
+            return "Companies mentioned: " + "; ".join(companies[:5]) + "."
+        return "That information is not available in the dataset."
     
     def _calculate_average(self, docs: list, query: str) -> str:
         """Calculate average values from documents"""
         return f"Based on the placement data:\n\n" + "\n\n".join(docs[:2])
     
     def _filter_by_year(self, docs: list, query: str) -> str:
-        """Filter data by specific year"""
+        """Provide concise year-specific answer. If asking highest package for a year, compute it."""
+        import re
         year = None
-        for word in query.split():
-            if word.isdigit() and len(word) == 4 and word.startswith('20'):
-                year = word
-                break
-        
-        if year:
-            filtered_docs = []
-            for doc in docs:
-                if year in doc:
-                    filtered_docs.append(doc)
-            
-            if filtered_docs:
-                return f"Based on the {year} placement data:\n\n" + "\n\n".join(filtered_docs[:3])
-        
-        return f"Based on the placement data:\n\n" + "\n\n".join(docs[:2])
+        m = re.search(r'(20\d{2})', query)
+        if m:
+            year = m.group(1)
+
+        if not year:
+            # If no specific year, fall back to year-wise highest across all
+            return self._find_highest_package_global('year-wise')
+
+        # Compute highest package for the specified year across all docs
+        max_for_year = 0.0
+        for doc in self.documents:
+            text = doc.get("content", "")
+            for line in text.split('\n'):
+                if year in line and ('lpa' in line.lower() or 'package' in line.lower()):
+                    pm = re.search(r'(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)', line.lower())
+                    if pm:
+                        try:
+                            val = float(pm.group(1))
+                        except Exception:
+                            continue
+                        if 0 < val < 200:
+                            max_for_year = max(max_for_year, val)
+
+        if max_for_year > 0:
+            return f"Highest package in {year}: {max_for_year:.1f} LPA."
+        return f"That information is not available in the dataset."
+
+    def _summarize_concise(self, query_lower: str, relevant_docs: list) -> str:
+        """Fallback concise summary without dumping raw rows."""
+        # Try to extract any package mentions to provide a short fact
+        import re
+        packages: List[float] = []
+        for doc in relevant_docs[:3]:
+            for num in re.findall(r'\b(\d+(?:\.\d+)?)\s*(?:lpa|lakhs?|package)\b', doc.lower()):
+                try:
+                    val = float(num)
+                    if 0 < val < 200:
+                        packages.append(val)
+                except Exception:
+                    continue
+
+        if packages:
+            # Provide min/max to be helpful but brief
+            return f"Packages mentioned: {min(packages):.1f}–{max(packages):.1f} LPA."
+
+        # Otherwise, provide a generic concise acknowledgement
+        return "I found relevant placement data. Please specify what you need (e.g., highest package, year-wise)."
     
     def process_query(self, query: str) -> str:
         """Process a user query and return response"""

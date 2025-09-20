@@ -148,6 +148,10 @@ build/
 coverage/
 .nyc_output/
 
+# Resume templates
+frontend/src/resume templates/
+frontend/public/resume-templates/
+
 # Misc
 *.tgz
 *.tar.gz
