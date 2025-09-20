@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { validateCharusatEmail, getEmailValidationMessage, getEmailExamples } from "@/utils/emailValidation";
+import { validateCharusatEmail, getEmailValidationMessage } from "@/utils/emailValidation";
  
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
@@ -577,11 +577,6 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 />
               </div>
               {emailError && <div className="text-red-500 text-sm">{emailError}</div>}
-              <div className="text-xs text-gray-500">
-                <div className="mb-1">Valid formats:</div>
-                <div>Any email ending with @charusat.edu.in or @charusat.ac.in</div>
-                <div>Examples: john@charusat.edu.in, mary@charusat.ac.in, 21it101@charusat.edu.in</div>
-              </div>
             </div>
             
             <div className="space-y-2">
