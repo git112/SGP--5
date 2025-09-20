@@ -4,21 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
 // Mock data for demonstration
-const companies = ["Google", "Microsoft", "Amazon", "Apple", "Netflix", "Meta"];
 const hrTechnicalQuestions = [
   {
-    company: "Google",
+    company: "Amazon",
     text: "Tell me about yourself.",
     category: "HR",
     round: "HR Round 1",
@@ -35,17 +28,17 @@ const hrTechnicalQuestions = [
 ];
 const codingQuestions = [
   {
+    company: "Amazon",
     title: "Two Sum",
     tags: ["Array", "HashMap"],
     difficulty: "Easy",
-    company: "Google",
     link: "https://leetcode.com/problems/two-sum/",
   },
   {
+    company: "Amazon",
     title: "Longest Increasing Subsequence",
     tags: ["DP", "Array"],
     difficulty: "Medium",
-    company: "Amazon",
     link: "https://leetcode.com/problems/longest-increasing-subsequence/",
   },
   // ...more
@@ -53,71 +46,22 @@ const codingQuestions = [
 
 export default function InterviewPage() {
   const navigate = useNavigate();
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  // Form state
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    company: "",
-    round: "HR",
-    questions: "",
-    tips: "",
-    anonymous: false,
-  });
-  const [formError, setFormError] = useState("");
-  const [formSuccess, setFormSuccess] = useState("");
   // Tab 1 filters
   const [typeFilter, setTypeFilter] = useState("Both");
-  const [companyFilter, setCompanyFilter] = useState("all");
   // Tab 2 filters
   const [difficultyFilter, setDifficultyFilter] = useState("all");
-  const [codingCompanyFilter, setCodingCompanyFilter] = useState("all");
-  // Random question logic
-  const [showRandom, setShowRandom] = useState(false);
-  const [randomQuestion, setRandomQuestion] = useState(null);
 
   // Filtered data
   const filteredHRTech = hrTechnicalQuestions.filter(q => {
     const typeMatch = typeFilter === "Both" || q.category === typeFilter;
-    const companyMatch = companyFilter === "all" || q.company === companyFilter;
-    return typeMatch && companyMatch;
+    return typeMatch;
   });
   const filteredCoding = codingQuestions.filter(q => {
     const diffMatch = difficultyFilter === "all" || q.difficulty === difficultyFilter;
-    const companyMatch = codingCompanyFilter === "all" || q.company === codingCompanyFilter;
-    return diffMatch && companyMatch;
+    return diffMatch;
   });
 
-  // Random question handler
-  const handleRandomQuestion = () => {
-    const pool = filteredHRTech.length ? filteredHRTech : hrTechnicalQuestions;
-    const idx = Math.floor(Math.random() * pool.length);
-    setRandomQuestion(pool[idx]);
-    setShowRandom(true);
-  };
-  const handleNextRandom = () => {
-    handleRandomQuestion();
-  };
 
-  // Modal form handlers
-  const handleFormChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm(f => ({ ...f, [name]: type === "checkbox" ? checked : value }));
-  };
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    setFormSuccess("");
-    if (form.email && !/^[\w.-]+@charusat\.edu\.in$/.test(form.email)) {
-      setFormError("Email must be a @charusat.edu.in address");
-      return;
-    }
-    // TODO: Submit to backend
-    setFormSuccess("Thank you for sharing your experience!");
-    setForm({ name: "", email: "", company: "", round: "HR", questions: "", tips: "", anonymous: false });
-    setTimeout(() => setModalOpen(false), 1200);
-  };
 
   return (
     <div className="min-h-screen relative flex flex-col bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#0f172a] text-foreground overflow-x-hidden">
@@ -139,53 +83,6 @@ export default function InterviewPage() {
         <div className="absolute bottom-20 right-20 w-2 h-2 bg-[#14788f]/45 rounded-full animate-ping shadow-lg shadow-[#14788f]/20" style={{ animationDelay: '3s' }}></div>
       </div>
       
-      {/* Modal */}
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-lg card border-primary/20 slide-up bg-white/10 backdrop-blur-xl shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center text-foreground">Share Your Interview Experience</DialogTitle>
-          </DialogHeader>
-          <form className="space-y-4 p-2" onSubmit={handleFormSubmit}>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" value={form.name} onChange={handleFormChange} placeholder="(Optional)" className="w-full" />
-              </div>
-              <div className="flex-1">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" value={form.email} onChange={handleFormChange} placeholder="@charusat.edu.in" type="email" className="w-full" />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="company">Company Name</Label>
-              <Input id="company" name="company" value={form.company} onChange={handleFormChange} required className="w-full" />
-            </div>
-            <div>
-              <Label>Interview Round</Label>
-              <RadioGroup name="round" value={form.round} onValueChange={val => setForm(f => ({ ...f, round: val }))} className="flex flex-col sm:flex-row gap-4 mt-1">
-                <div className="flex items-center gap-2"><RadioGroupItem value="HR" id="hr" /> <Label htmlFor="hr">HR</Label></div>
-                <div className="flex items-center gap-2"><RadioGroupItem value="Technical" id="tech" /> <Label htmlFor="tech">Technical</Label></div>
-                <div className="flex items-center gap-2"><RadioGroupItem value="Coding" id="coding" /> <Label htmlFor="coding">Coding</Label></div>
-              </RadioGroup>
-            </div>
-            <div>
-              <Label htmlFor="questions">Questions</Label>
-              <Textarea id="questions" name="questions" value={form.questions} onChange={handleFormChange} required rows={3} className="w-full" />
-            </div>
-            <div>
-              <Label htmlFor="tips">Interview Tips / Experience</Label>
-              <Textarea id="tips" name="tips" value={form.tips} onChange={handleFormChange} rows={2} className="w-full" />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="anonymous" name="anonymous" checked={form.anonymous} onCheckedChange={val => setForm(f => ({ ...f, anonymous: !!val }))} />
-              <Label htmlFor="anonymous">Submit as anonymous</Label>
-            </div>
-            {formError && <div className="text-red-500 text-sm">{formError}</div>}
-            {formSuccess && <div className="text-green-500 text-sm">{formSuccess}</div>}
-            <Button type="submit" className="w-full mt-2">Submit</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
       {/* Main Content - Two Column Layout */}
       <div className="container mx-auto pt-10 pb-10 px-4 max-w-7xl relative z-10">
         <motion.div 
@@ -198,14 +95,8 @@ export default function InterviewPage() {
             Interview Questions & Coding Prep
           </h2>
           <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light mb-8">
-            Practice real interview questions, filter by company or type, and share your experience to help your juniors!
+            Practice real interview questions and filter by type to prepare for your interviews!
           </p>
-          <Button 
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-lg"
-            onClick={() => setModalOpen(true)}
-          >
-            Submit Your Experience
-          </Button>
         </motion.div>
         <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 relative">
           {/* Vertical Divider for desktop */}
@@ -213,8 +104,8 @@ export default function InterviewPage() {
           {/* Left: HR/Technical/Domain-based Questions */}
           <div className="flex-1 min-w-0 px-0 lg:pr-8 flex flex-col">
             <div className="mb-8">
-              <h3 className="text-2xl font-bold text-cyan-300 mb-2 tracking-tight">HR / Technical / Domain Questions</h3>
-              <p className="text-sm text-slate-200/80 mb-4">Browse and practice real interview questions asked in HR, technical, and domain rounds.</p>
+              <h3 className="text-2xl font-bold text-cyan-300 mb-2 tracking-tight">HR / Technical Questions</h3>
+              <p className="text-sm text-slate-200/80 mb-4">Browse and practice real interview questions asked in HR and technical rounds.</p>
               <div className="flex gap-2 flex-wrap mb-4">
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger className="w-36">
@@ -226,54 +117,8 @@ export default function InterviewPage() {
                     <SelectItem value="Technical">Technical</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="Company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Companies</SelectItem>
-                    {companies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Button variant="hero" size="lg" className="flex-1 md:max-w-xs shadow-xl" onClick={handleRandomQuestion}>
-                  Random Question
-                </Button>
               </div>
             </div>
-            {/* Random Question Fade-in */}
-            <AnimatePresence>
-              {showRandom && randomQuestion && (
-                <motion.div
-                  key={`random-${String(randomQuestion.category)}-${String(randomQuestion.round)}-${String(randomQuestion.text)}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.5 }}
-                  className="mb-6"
-                >
-                  <div className="h-[220px]">
-                    <Card className="border-cyan-400/40 bg-white/10 backdrop-blur-xl shadow-2xl h-full flex flex-col justify-between">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <span className="text-cyan-400 font-bold">{randomQuestion.company}</span>
-                          <Badge variant="secondary">{randomQuestion.category}</Badge>
-                          <span className="text-xs text-muted-foreground ml-2">{randomQuestion.round}</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-lg font-medium mb-2">{randomQuestion.text}</div>
-                        <div className="flex gap-2 flex-wrap">
-                          {randomQuestion.tags.map((tag: string) => <Badge key={`rand-${String(randomQuestion.text)}-${tag}`} variant="outline">{tag}</Badge>)}
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button size="sm" variant="outline" onClick={handleNextRandom}>Next Question</Button>
-                      </CardFooter>
-                    </Card>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
             {/* Question List - Q&A style, no company names, no cards */}
             <motion.div
               className="space-y-4"
@@ -321,15 +166,6 @@ export default function InterviewPage() {
                     <SelectItem value="Easy">Easy</SelectItem>
                     <SelectItem value="Medium">Medium</SelectItem>
                     <SelectItem value="Hard">Hard</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={codingCompanyFilter} onValueChange={setCodingCompanyFilter}>
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="Company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Companies</SelectItem>
-                    {companies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
