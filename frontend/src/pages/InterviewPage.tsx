@@ -1210,20 +1210,569 @@ const hrTechnicalQuestions = [
 
 const codingQuestions = [
   {
-    company: "Amazon",
     title: "Two Sum",
-    tags: ["Array", "HashMap"],
+    tags: ["Arrays & Strings"],
     difficulty: "Easy",
     link: "https://leetcode.com/problems/two-sum/"
-  },
-  {
-    company: "Amazon",
-    title: "Longest Increasing Subsequence",
-    tags: ["DP", "Array"],
+},
+{
+    title: "Best Time to Buy and Sell Stock",
+    tags: ["Arrays & Strings"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"
+},
+{
+    title: "Contains Duplicate",
+    tags: ["Arrays & Strings"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/contains-duplicate/"
+},
+{
+    title: "Product of Array Except Self",
+    tags: ["Arrays & Strings"],
     difficulty: "Medium",
-    link: "https://leetcode.com/problems/longest-increasing-subsequence/",
-  },
-  // ...more
+    link: "https://leetcode.com/problems/product-of-array-except-self/"
+},
+{
+    title: "Maximum Subarray",
+    tags: ["Arrays & Strings"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/maximum-subarray/"
+},
+{
+    title: "Merge Intervals",
+    tags: ["Arrays & Strings"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/merge-intervals/"
+},
+{
+    title: "3Sum",
+    tags: ["Arrays & Strings"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/3sum/"
+},
+{
+    title: "Container With Most Water",
+    tags: ["Arrays & Strings"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/container-with-most-water/"
+},
+{
+    title: "Trapping Rain Water",
+    tags: ["Arrays & Strings"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/trapping-rain-water/"
+},
+{
+    title: "Set Matrix Zeroes",
+    tags: ["Arrays & Strings"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/set-matrix-zeroes/"
+},
+{
+    title: "Rotate Image",
+    tags: ["Arrays & Strings"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/rotate-image/"
+},
+{
+    title: "Group Anagrams",
+    tags: ["Hashing & Maps"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/group-anagrams/"
+},
+{
+    title: "Valid Anagram",
+    tags: ["Hashing & Maps"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/valid-anagram/"
+},
+{
+    title: "Top K Frequent Elements",
+    tags: ["Hashing & Maps"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/top-k-frequent-elements/"
+},
+{
+    title: "Longest Consecutive Sequence",
+    tags: ["Hashing & Maps"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/longest-consecutive-sequence/"
+},
+{
+    title: "Subarray Sum Equals K",
+    tags: ["Hashing & Maps"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/subarray-sum-equals-k/"
+},
+{
+    title: "Binary Search",
+    tags: ["Binary Search"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/binary-search/"
+},
+{
+    title: "Find Minimum in Rotated Sorted Array",
+    tags: ["Binary Search"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/"
+},
+{
+    title: "Search in Rotated Sorted Array",
+    tags: ["Binary Search"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/search-in-rotated-sorted-array/"
+},
+{
+    title: "Time Based Key-Value Store",
+    tags: ["Binary Search"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/time-based-key-value-store/"
+},
+{
+    title: "Median of Two Sorted Arrays",
+    tags: ["Binary Search"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/median-of-two-sorted-arrays/"
+},
+{
+    title: "Reverse Linked List",
+    tags: ["Linked List"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/reverse-linked-list/"
+},
+{
+    title: "Merge Two Sorted Lists",
+    tags: ["Linked List"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/merge-two-sorted-lists/"
+},
+{
+    title: "Linked List Cycle",
+    tags: ["Linked List"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/linked-list-cycle/"
+},
+{
+    title: "Remove Nth Node From End of List",
+    tags: ["Linked List"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/"
+},
+{
+    title: "Reorder List",
+    tags: ["Linked List"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/reorder-list/"
+},
+{
+    title: "Copy List with Random Pointer",
+    tags: ["Linked List"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/copy-list-with-random-pointer/"
+},
+{
+    title: "Merge k Sorted Lists",
+    tags: ["Linked List"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/merge-k-sorted-lists/"
+},
+{
+    title: "Valid Parentheses",
+    tags: ["Stack"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/valid-parentheses/"
+},
+{
+    title: "Min Stack",
+    tags: ["Stack"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/min-stack/"
+},
+{
+    title: "Evaluate Reverse Polish Notation",
+    tags: ["Stack"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/evaluate-reverse-polish-notation/"
+},
+{
+    title: "Generate Parentheses",
+    tags: ["Stack"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/generate-parentheses/"
+},
+{
+    title: "Daily Temperatures",
+    tags: ["Stack"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/daily-temperatures/"
+},
+{
+    title: "Car Fleet",
+    tags: ["Stack"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/car-fleet/"
+},
+{
+    title: "Largest Rectangle in Histogram",
+    tags: ["Stack"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/largest-rectangle-in-histogram/"
+},
+{
+    title: "Invert Binary Tree",
+    tags: ["Trees"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/invert-binary-tree/"
+},
+{
+    title: "Maximum Depth of Binary Tree",
+    tags: ["Trees"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/maximum-depth-of-binary-tree/"
+},
+{
+    title: "Same Tree",
+    tags: ["Trees"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/same-tree/"
+},
+{
+    title: "Subtree of Another Tree",
+    tags: ["Trees"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/subtree-of-another-tree/"
+},
+{
+    title: "Lowest Common Ancestor of a Binary Search Tree",
+    tags: ["Trees"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/"
+},
+{
+    title: "Binary Tree Level Order Traversal",
+    tags: ["Trees"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/binary-tree-level-order-traversal/"
+},
+{
+    title: "Validate Binary Search Tree",
+    tags: ["Trees"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/validate-binary-search-tree/"
+},
+{
+    title: "Kth Smallest Element in a BST",
+    tags: ["Trees"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/kth-smallest-element-in-a-bst/"
+},
+{
+    title: "Construct Binary Tree from Preorder and Inorder Traversal",
+    tags: ["Trees"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/"
+},
+{
+    title: "Binary Tree Maximum Path Sum",
+    tags: ["Trees"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/binary-tree-maximum-path-sum/"
+},
+{
+    title: "Serialize and Deserialize Binary Tree",
+    tags: ["Trees"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/serialize-and-deserialize-binary-tree/"
+},
+{
+    title: "Kth Largest Element in a Stream",
+    tags: ["Heaps & Priority Queues"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/kth-largest-element-in-a-stream/"
+},
+{
+    title: "Last Stone Weight",
+    tags: ["Heaps & Priority Queues"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/last-stone-weight/"
+},
+{
+    title: "K Closest Points to Origin",
+    tags: ["Heaps & Priority Queues"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/k-closest-points-to-origin/"
+},
+{
+    title: "Kth Largest Element in an Array",
+    tags: ["Heaps & Priority Queues"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/kth-largest-element-in-an-array/"
+},
+{
+    title: "Task Scheduler",
+    tags: ["Heaps & Priority Queues"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/task-scheduler/"
+},
+{
+    title: "Find Median from Data Stream",
+    tags: ["Heaps & Priority Queues"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/find-median-from-data-stream/"
+},
+{
+    title: "Climbing Stairs",
+    tags: ["DP"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/climbing-stairs/"
+},
+{
+    title: "Coin Change",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/coin-change/"
+},
+{
+    title: "Longest Increasing Subsequence",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/longest-increasing-subsequence/"
+},
+{
+    title: "Longest Common Subsequence",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/longest-common-subsequence/"
+},
+{
+    title: "Word Break",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/word-break/"
+},
+{
+    title: "Combination Sum IV",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/combination-sum-iv/"
+},
+{
+    title: "House Robber",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/house-robber/"
+},
+{
+    title: "House Robber II",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/house-robber-ii/"
+},
+{
+    title: "Decode Ways",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/decode-ways/"
+},
+{
+    title: "Unique Paths",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/unique-paths/"
+},
+{
+    title: "Jump Game",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/jump-game/"
+},
+{
+    title: "Number of Islands",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/number-of-islands/"
+},
+{
+    title: "Clone Graph",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/clone-graph/"
+},
+{
+    title: "Max Area of Island",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/max-area-of-island/"
+},
+{
+    title: "Pacific Atlantic Water Flow",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/pacific-atlantic-water-flow/"
+},
+{
+    title: "Course Schedule",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/course-schedule/"
+},
+{
+    title: "Number of Connected Components in an Undirected Graph",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/"
+},
+{
+    title: "Graph Valid Tree",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/graph-valid-tree/"
+},
+{
+    title: "Rotting Oranges",
+    tags: ["Graphs"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/rotting-oranges/"
+},
+{
+    title: "Word Ladder",
+    tags: ["Graphs"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/word-ladder/"
+},
+{
+    title: "Longest Substring Without Repeating Characters",
+    tags: ["Sliding Window"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/longest-substring-without-repeating-characters/"
+},
+{
+    title: "Longest Repeating Character Replacement",
+    tags: ["Sliding Window"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/longest-repeating-character-replacement/"
+},
+{
+    title: "Permutation in String",
+    tags: ["Sliding Window"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/permutation-in-string/"
+},
+{
+    title: "Find All Anagrams in a String",
+    tags: ["Sliding Window"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/find-all-anagrams-in-a-string/"
+},
+{
+    title: "LRU Cache",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/lru-cache/"
+},
+{
+    title: "LFU Cache",
+    tags: ["System Design"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/lfu-cache/"
+},
+{
+    title: "Design Twitter",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/design-twitter/"
+},
+{
+    title: "Implement Trie (Prefix Tree)",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/implement-trie-prefix-tree/"
+},
+{
+    title: "Word Search",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/word-search/"
+},
+{
+    title: "Design HashMap",
+    tags: ["System Design"],
+    difficulty: "Easy",
+    link: "https://leetcode.com/problems/design-hashmap/"
+},
+{
+    title: "Design Hit Counter",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/design-hit-counter/"
+},
+{
+    title: "Design Snake Game",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/design-snake-game/"
+},
+{
+    title: "Design Tic-Tac-Toe",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/design-tic-tac-toe/"
+},
+{
+    title: "Design Circular Queue",
+    tags: ["System Design"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/design-circular-queue/"
+},
+{
+    title: "Alien Dictionary",
+    tags: ["Advanced"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/alien-dictionary/"
+},
+{
+    title: "Regular Expression Matching",
+    tags: ["Advanced"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/regular-expression-matching/"
+},
+{
+    title: "Wildcard Matching",
+    tags: ["Advanced"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/wildcard-matching/"
+},
+{
+    title: "Russian Doll Envelopes",
+    tags: ["Advanced"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/russian-doll-envelopes/"
+},
+{
+    title: "Minimum Window Substring",
+    tags: ["Sliding Window"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/minimum-window-substring/"
+},
+{
+    title: "Word Search II",
+    tags: ["Advanced"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/word-search-ii/"
+},
+{
+    title: "Number of Longest Increasing Subsequence",
+    tags: ["DP"],
+    difficulty: "Medium",
+    link: "https://leetcode.com/problems/number-of-longest-increasing-subsequence/"
+},
+{
+    title: "Basic Calculator",
+    tags: ["Stack"],
+    difficulty: "Hard",
+    link: "https://leetcode.com/problems/basic-calculator/"
+}  // ...more
 ];
 
 export default function InterviewPage() {
@@ -1481,57 +2030,90 @@ export default function InterviewPage() {
               <p className="text-sm text-slate-200/80 mb-4">Explore and practice coding questions commonly asked in interviews. Filter by difficulty or company.</p>
               <div className="flex gap-2 flex-wrap mb-4">
                 <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                  <SelectTrigger className="w-36">
+                  <SelectTrigger className="w-36 bg-slate-800/50 border-slate-600 text-slate-200">
                     <SelectValue placeholder="Difficulty" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Easy">Easy</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="Hard">Hard</SelectItem>
+                  <SelectContent className="bg-slate-800 border-slate-600 z-[100] max-h-96 overflow-y-auto">
+                    <SelectItem value="all" className="text-slate-200 hover:bg-slate-700">All</SelectItem>
+                    <SelectItem value="Easy" className="text-slate-200 hover:bg-slate-700">Easy</SelectItem>
+                    <SelectItem value="Medium" className="text-slate-200 hover:bg-slate-700">Medium</SelectItem>
+                    <SelectItem value="Hard" className="text-slate-200 hover:bg-slate-700">Hard</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            {/* Coding Questions Table/List */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left border-separate border-spacing-y-2">
-                <thead>
-                  <tr className="text-slate-300">
-                    <th className="px-3 py-2 font-semibold">Title</th>
-                    <th className="px-3 py-2 font-semibold">Tags</th>
-                    <th className="px-3 py-2 font-semibold">Difficulty</th>
-                    <th className="px-3 py-2 font-semibold">Practice</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCoding.map((q) => (
-                    <tr key={`${q.title}-${q.company}`} className="bg-white/10 backdrop-blur-xl border border-purple-400/10 rounded-xl transition-all duration-200 hover:bg-purple-400/10 group">
-                      <td className="px-3 py-2 font-medium text-purple-200 whitespace-nowrap">{q.title}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex gap-1 flex-wrap">
-                          {q.tags.map((tag) => <Badge key={`${q.title}-${tag}`} variant="outline" className="border-purple-400/30 text-purple-200 group-hover:border-purple-400/60 group-hover:text-purple-100">{tag}</Badge>)}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        {(() => {
-                          let variant: 'secondary' | 'default' | 'destructive' = 'default';
-                          if (q.difficulty === 'Easy') variant = 'secondary';
-                          else if (q.difficulty === 'Hard') variant = 'destructive';
-                          return <Badge variant={variant} className="text-xs px-2 py-1">{q.difficulty}</Badge>;
-                        })()}
-                      </td>
-                      <td className="px-3 py-2">
-                        <a href={q.link} target="_blank" rel="noopener noreferrer" className="text-purple-300 font-medium underline underline-offset-2 group-hover:text-purple-200 transition-colors">Practice</a>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredCoding.length === 0 && (
-                    <tr><td colSpan={4} className="text-center text-muted py-12">No coding questions found.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {/* Coding Questions Cards */}
+            <motion.div
+              key={difficultyFilter} // Force re-render when difficulty changes
+              className="space-y-4"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.05, delayChildren: 0.1 },
+                },
+              }}
+            >
+              {filteredCoding.map((q) => (
+                <motion.div
+                  key={`${q.title}-${q.difficulty}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 0.25 }}
+                  className="bg-white/10 backdrop-blur-xl border border-purple-400/10 rounded-lg px-4 py-3 hover:bg-purple-400/10 transition-all duration-200 group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="text-base md:text-lg font-medium text-purple-200 group-hover:text-purple-100 transition-colors">
+                      {q.title}
+                    </h4>
+                    <div className="flex items-center gap-2 ml-4">
+                      {(() => {
+                        let variant: 'secondary' | 'default' | 'destructive' = 'default';
+                        if (q.difficulty === 'Easy') variant = 'secondary';
+                        else if (q.difficulty === 'Hard') variant = 'destructive';
+                        return <Badge variant={variant} className="text-xs px-2 py-1">{q.difficulty}</Badge>;
+                      })()}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {q.tags.map((tag) => (
+                      <Badge 
+                        key={`${q.title}-${tag}`} 
+                        variant="outline" 
+                        className="border-purple-400/30 text-purple-200 group-hover:border-purple-400/60 group-hover:text-purple-100 text-xs"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <a 
+                      href={q.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-400/30 hover:border-purple-400/50 text-purple-200 hover:text-purple-100 rounded-md text-sm font-medium transition-all duration-200 group-hover:shadow-lg group-hover:shadow-purple-500/20"
+                    >
+                      Practice Now
+                      <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+              
+              {filteredCoding.length === 0 && (
+                <div className="text-center text-slate-400 py-12">
+                  <p className="text-lg mb-2">No coding questions found for "{difficultyFilter}"</p>
+                  <p className="text-sm">Try selecting a different difficulty level</p>
+                </div>
+              )}
+            </motion.div>
           </div>
         </div>
       </div>
