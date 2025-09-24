@@ -59,6 +59,8 @@ The codebase is cleanly separated between the frontend and backend, ensuring mai
 │  │  ├─ pages/      # All application pages (Insights, Resume Builder)
 │  │  └─ main.tsx    # React application entry point
 └─ README.md
+---
+```
 
 ## ✨ The Journey
 
