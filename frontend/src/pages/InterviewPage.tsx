@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+// Removed unused Card imports
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
@@ -1784,6 +1784,8 @@ export default function InterviewPage() {
   // Tab 2 filters
   const [difficultyFilter, setDifficultyFilter] = useState("all");
 
+  // No floating button; each section will be scrollable
+
   // Function to determine category based on tags and content
   const getCategoryFromTags = (question) => {
     const tags = question.tags || [];
@@ -1965,7 +1967,8 @@ export default function InterviewPage() {
                 </Select>
               </div>
             </div>
-            {/* Question List - Q&A style, no company names, no cards */}
+            {/* Question List - scrollable container */}
+            <div className="max-h-[70vh] overflow-y-auto pr-2 scroll-smooth custom-thin-scrollbar">
             <motion.div
               key={selectedCategory} // Force re-render when category changes
               className="space-y-4"
@@ -2000,8 +2003,8 @@ export default function InterviewPage() {
                     </div>
                     {q.tags && q.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {q.tags.slice(0, 3).map((tag, index) => (
-                          <span key={index} className="px-2 py-1 bg-slate-700/50 text-slate-300 text-xs rounded">
+                        {q.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="px-2 py-1 bg-slate-700/50 text-slate-300 text-xs rounded">
                             {tag}
                           </span>
                         ))}
@@ -2022,6 +2025,7 @@ export default function InterviewPage() {
                 </div>
               )}
             </motion.div>
+            </div>
           </div>
           {/* Right: Coding Questions */}
           <div className="flex-1 min-w-0 px-0 lg:pl-8 flex flex-col mt-12 lg:mt-0">
@@ -2042,7 +2046,8 @@ export default function InterviewPage() {
                 </Select>
               </div>
             </div>
-            {/* Coding Questions Cards */}
+            {/* Coding Questions Cards - scrollable container */}
+            <div className="max-h-[70vh] overflow-y-auto pr-2 scroll-smooth custom-thin-scrollbar">
             <motion.div
               key={difficultyFilter} // Force re-render when difficulty changes
               className="space-y-4"
@@ -2114,14 +2119,24 @@ export default function InterviewPage() {
                 </div>
               )}
             </motion.div>
+            </div>
           </div>
         </div>
       </div>
       {/* Global CTA below both sections */}
       <div className="container mx-auto px-4 pb-12">
         <div className="flex justify-center">
-          <Button variant="hero" size="lg" className="shadow-xl" onClick={() => navigate('/competency-test')}>
-            Test Your Confidence!
+          <Button
+            variant="hero"
+            size="lg"
+            className="relative group overflow-hidden shadow-2xl px-12 py-6 text-xl md:text-2xl rounded-2xl tracking-wide ring-1 ring-white/20 hover:ring-white/30 hover:scale-[1.02] transition-all duration-300 hover:shadow-[0_0_40px_rgba(99,102,241,0.55)]"
+            onClick={() => navigate('/competency-test')}
+          >
+            <span className="relative z-10 font-semibold drop-shadow-sm">Test Your Confidence!</span>
+            <span
+              aria-hidden
+              className="absolute inset-0 -translate-x-full bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.25),transparent)] group-hover:translate-x-full transition-transform duration-700"
+            />
           </Button>
         </div>
       </div>
@@ -2135,6 +2150,24 @@ export default function InterviewPage() {
         select.custom-select:focus, select.custom-select option:checked {
           background-color: #164e63;
           color: #38bdf8;
+        }
+        /* Thin, subtle scrollbar for the scrollable sections */
+        .custom-thin-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(148, 163, 184, 0.35);
+          border-radius: 9999px;
+        }
+        .custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(148, 163, 184, 0.55);
         }
       `}</style>
     </div>
