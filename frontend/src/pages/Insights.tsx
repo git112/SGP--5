@@ -8,7 +8,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import {
-  Building2, TrendingUp, DollarSign, BookOpen, Target, BarChart3, RefreshCw
+  Building2, TrendingUp, DollarSign, BookOpen, Target, BarChart3, RefreshCw, Quote
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { insightsApi, InsightsData, SheetsMetadata, RoleData } from '../services/insightsApi';
@@ -69,6 +69,7 @@ const GlassyTooltip = (props: any) => {
 
 export default function Insights() {
   const [activeTab, setActiveTab] = useState('2024');
+  const [selectedYear, setSelectedYear] = useState('2024');
   const queryClient = useQueryClient();
 
   // Fetch insights data with React Query
@@ -106,6 +107,13 @@ export default function Insights() {
   useEffect(() => {
     if (availableYears.length > 0 && !availableYears.includes(activeTab)) {
       setActiveTab(availableYears[availableYears.length - 1]);
+    }
+  }, [availableYears]);
+
+  // Initialize selected year for companies section
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[availableYears.length - 1]);
     }
   }, [availableYears]);
 
@@ -171,15 +179,43 @@ export default function Insights() {
       animate="visible"
     >
       {/* Background */}
-      <motion.div 
-        className="absolute inset-0 bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#1a1f3a] animate-gradient-x bg-[length:400%_400%] z-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.5 }}
-      ></motion.div>
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419] via-transparent to-[#1a1f3a]/50 opacity-80 z-0"></div>
-      <div className="absolute inset-0 bg-gradient-to-r from-[#36b5d3]/5 via-transparent to-[#14788f]/5 animate-pulse z-0"></div>
-      <div className="absolute inset-0 grid-pattern opacity-20 z-0"></div>
+      {/* --- NEW Proper & Balanced Background --- */}
+
+{/* 1. Base Gradient: A sophisticated, evenly distributed dark blue and slate gradient */}
+<div 
+  className="absolute inset-0 bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] z-0" 
+/>
+
+{/* 2. Ambient Glow: A soft, centered radial gradient to gently lift the middle */}
+<div 
+  className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(14,165,233,0.1),_transparent_70%)] z-0" 
+/>
+
+{/* 3. Subtle Grid Pattern: A clean, uniform texture */}
+<div 
+  className="absolute inset-0 grid-pattern-balanced opacity-10 z-0" 
+/>
+
+{/* 4. Floating Orbs: For gentle, ambient motion (optional, but recommended for a dynamic feel) */}
+<motion.div 
+  className="absolute top-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl"
+  animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
+  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+/>
+<motion.div 
+  className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl"
+  animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
+  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+/>
+
+{/* Add this <style> tag to your component or a global CSS file */}
+<style dangerouslySetInnerHTML={{ __html: `
+  .grid-pattern-balanced {
+    background-image: linear-gradient(rgba(100, 116, 139, 0.4) 1px, transparent 1px), 
+                      linear-gradient(90deg, rgba(100, 116, 139, 0.4) 1px, transparent 1px);
+    background-size: 3rem 3rem;
+  }
+`}} />
       
       {/* Floating orbs */}
       <motion.div className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-[#36b5d3]/10 blur-3xl z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} />
@@ -190,53 +226,120 @@ export default function Insights() {
       <Header />
 
       {/* Hero Section */}
-      <section className="py-16 px-6 relative overflow-hidden">
-        <motion.div className="absolute top-20 left-20 w-3 h-3 bg-cyan-400/30 rounded-full animate-ping" style={{animationDelay: '0s'}} />
-        <motion.div className="absolute bottom-20 right-20 w-2 h-2 bg-blue-400/40 rounded-full animate-ping" style={{animationDelay: '1s'}} />
-        <motion.div className="absolute top-1/2 left-1/3 w-2 h-2 bg-cyan-300/30 rounded-full animate-ping" style={{animationDelay: '2s'}} />
-        
-        <div className="max-w-7xl mx-auto text-center relative z-10">
-          <motion.div variants={itemVariants}>
-            <div className="flex justify-center mb-6">
-              <div className="bg-cyan-500/20 backdrop-blur-sm rounded-full p-4">
-                <BarChart3 className="w-12 h-12 text-cyan-400" />
-              </div>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-cyan-300 bg-clip-text text-transparent">
-              Placement Insights
-            </h1>
-            <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-4">
-              Unlock data-driven insights into placement trends, roles, and salaries.
-            </p>
-            
-            {/* Data Source Info */}
-            {metadata && (
-              <div className="text-sm text-slate-400 mb-6">
-                <p>Data from: {metadata.title}</p>
-                <p>Last updated: {new Date(metadata.last_updated).toLocaleString()}</p>
-              </div>
-            )}
-            
-            <motion.div className="flex justify-center gap-4 mt-8" variants={buttonVariants}>
-              <Button
-                variant="outline"
-                className="border-cyan-400/30 hover:bg-cyan-500/20 rounded-full font-semibold"
-                onClick={() => setActiveTab('2020-2025')}
-              >
-                2020–2025
-              </Button>
-              <Button
-                variant="outline"
-                className="border-cyan-400/30 hover:bg-cyan-500/20 rounded-full font-semibold flex items-center gap-2"
-                onClick={handleRefresh}
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh Data
-              </Button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+    <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+  
+  {/* --- NEW Brighter & More Dynamic Background --- */}
+
+  {/* 1. Lighter, More Vibrant Gradient */}
+  <motion.div 
+    className="absolute inset-0 bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#334155] z-0"
+  />
+  
+  {/* 2. Subtle Grid Texture (unchanged) */}
+  <div className="absolute inset-0 bg-grid-slate-700/50 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,#000)] opacity-20 z-0"></div>
+
+  {/* 3. Floating Orbs for soft color (unchanged) */}
+  <motion.div 
+    className="absolute top-1/4 right-1/4 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl"
+    animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
+    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+  />
+  <motion.div 
+    className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"
+    animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
+    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+  />
+
+  {/* 4. MORE Blinking Stars for a lively effect */}
+  <motion.div 
+      className="absolute top-[15%] left-[10%] w-[2px] h-[2px] bg-white rounded-full"
+      animate={{ opacity: [0, 1, 0] }}
+      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0 }}
+  />
+  <motion.div 
+      className="absolute top-[30%] right-[15%] w-1 h-1 bg-cyan-200 rounded-full"
+      animate={{ opacity: [0, 0.8, 0], scale: [1, 1.3, 1] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+  />
+  <motion.div 
+      className="absolute bottom-[20%] left-[20%] w-[3px] h-[3px] bg-white rounded-full"
+      animate={{ opacity: [0, 1, 0] }}
+      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1.1 }}
+  />
+  <motion.div 
+      className="absolute top-[55%] left-[40%] w-1 h-1 bg-slate-400 rounded-full"
+      animate={{ opacity: [0, 0.7, 0] }}
+      transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+  />
+  <motion.div 
+      className="absolute top-[40%] left-[70%] w-[2px] h-[2px] bg-cyan-300 rounded-full"
+      animate={{ opacity: [0, 1, 0] }}
+      transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 1.9 }}
+  />
+  <motion.div 
+      className="absolute bottom-[40%] right-[30%] w-1.5 h-1.5 bg-white rounded-full"
+      animate={{ opacity: [0, 1, 0], scale: [1, 1.2, 1] }}
+      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 2.3 }}
+  />
+    <motion.div 
+      className="absolute top-[80%] left-[50%] w-[2px] h-[2px] bg-slate-300 rounded-full"
+      animate={{ opacity: [0, 0.9, 0] }}
+      transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 2.8 }}
+  />
+  <motion.div 
+      className="absolute bottom-[5%] right-[55%] w-1 h-1 bg-cyan-400 rounded-full"
+      animate={{ opacity: [0, 1, 0] }}
+      transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: 3.1 }}
+  />
+  
+  {/* --- Background End --- */}
+
+
+  {/* Main Content (Your original content sits on top) */}
+  <motion.div
+    className="relative z-10 text-center max-w-4xl mx-auto px-6"
+    variants={containerVariants}
+    initial="hidden"
+    animate="visible"
+  >
+    <div className="space-y-8">
+      
+      {/* "Hook" Badge */}
+      <motion.div 
+        className="inline-block px-6 py-3 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm"
+        variants={itemVariants}
+      >
+        <span className="text-sm text-cyan-400 font-semibold tracking-wide">
+          Welcome to Your Insights Dashboard
+        </span>
+      </motion.div>
+      
+      {/* Main Headline */}
+      <motion.div 
+        className="space-y-4"
+        variants={itemVariants}
+      >
+        <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
+          <span className="block bg-gradient-to-r from-white via-slate-200 to-cyan-300 bg-clip-text text-transparent">
+            Placement Clarity,
+          </span>
+          <span className="block text-white mt-2">
+            Delivered.
+          </span>
+        </h1>
+      </motion.div>
+      
+      {/* Subtitle */}
+      <motion.p 
+        className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
+        variants={itemVariants}
+      >
+        Explore data-driven trends, company details, and salary insights to chart your path to success.
+      </motion.p>
+      
+    </div>
+  </motion.div>
+</section>
 
       {/* Stats Overview */}
       <section className="py-16 px-6">
@@ -267,14 +370,21 @@ export default function Insights() {
       <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-              Does CGPA Matter?
-            </h2>
-            <div className="mx-auto w-16 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 rounded-full mb-4"></div>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-              Correlation between academic performance and placement success.
-            </p>
-          </motion.div>
+  
+  {/* Updated h2 with a white-to-blue gradient */}
+  <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+    Does CGPA Matter?
+  </h2>
+  
+  {/* Updated underline to match the new gradient */}
+  <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
+  
+  {/* Unchanged subtitle */}
+  <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+    Correlation between academic performance and placement success.
+  </p>
+  
+</motion.div>
           <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={data.cgpa_data} barCategoryGap={24}>
@@ -295,8 +405,9 @@ export default function Insights() {
         </div>
       </section>
 
-      {/* Top Companies Hiring */}
-      <section className="py-16 px-6">
+      {/* Top Hiring Companies - Updated with Year-wise Buttons */}
+       {/* Top Companies Hiring */}
+          <section className="py-16 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
             <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
@@ -337,8 +448,8 @@ export default function Insights() {
                         fill={entry.color} 
                         style={{ 
                           filter: `drop-shadow(0 0 12px ${entry.color}40)`,
-                          stroke: "#1e293b",
-                          strokeWidth: 2
+                          stroke: "#7e9a61ff",
+                          strokeWidth: 0.30
                         }} 
                       />
                     ))}
@@ -420,12 +531,21 @@ export default function Insights() {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-              In-Demand Job Roles
-            </h2>
-            <div className="mx-auto w-16 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 rounded-full mb-4"></div>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">Most sought-after positions in the job market.</p>
-          </motion.div>
+  
+  {/* Updated h2 with the white-to-blue gradient */}
+  <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+    In-Demand Job Roles
+  </h2>
+  
+  {/* Updated underline to match the new gradient */}
+  <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
+  
+  {/* Unchanged subtitle */}
+  <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+    Most sought-after positions in the job market.
+  </p>
+  
+</motion.div>
           
           {/* Year Filter Tabs */}
           <motion.div className="flex flex-wrap justify-center gap-3 mb-8" variants={itemVariants}>
@@ -478,7 +598,9 @@ export default function Insights() {
           <motion.div className="mt-12" variants={itemVariants}>
             <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/30 chart-hover">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-white mb-2">Yearly Placement Overview</h3>
+                <h3 className="text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+  Yearly Placement Overview
+</h3>
                 <p className="text-slate-400 text-sm">Total placements and top roles by year</p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
@@ -511,12 +633,21 @@ export default function Insights() {
         <motion.div className="absolute bottom-1/4 right-1/3 w-1.5 h-1.5 bg-blue-300/40 rounded-full animate-ping" style={{animationDelay: '2s'}} />
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-              Salary Growth Trajectory
-            </h2>
-            <div className="mx-auto w-16 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 rounded-full mb-4"></div>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">Trends in compensation packages over the years.</p>
-          </motion.div>
+  
+  {/* Updated h2 with the white-to-blue gradient */}
+  <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+    Salary Growth Trajectory
+  </h2>
+  
+  {/* Updated underline to match the new gradient */}
+  <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
+  
+  {/* Unchanged subtitle */}
+  <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+    Trends in compensation packages over the years.
+  </p>
+  
+</motion.div>
           <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
             <ResponsiveContainer width="100%" height={400}>
               <AreaChart data={data.package_data}>
@@ -541,29 +672,6 @@ export default function Insights() {
           </motion.div>
         </div>
       </section>
-
-      {/* Call-to-Action */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              Ready to Explore More Insights?
-            </h2>
-            <p className="text-lg text-slate-300 mb-8">
-              Discover detailed company information, interview questions, and personalized recommendations.
-            </p>
-            <motion.div className="flex flex-col sm:flex-row gap-4 justify-center" variants={buttonVariants}>
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                Explore Companies
-              </Button>
-              <Button variant="outline" className="border-cyan-400/30 hover:bg-cyan-500/20 text-cyan-400 font-semibold px-8 py-3 rounded-lg transition-all duration-300">
-                Practice Interviews
-              </Button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
       <Footer />
     </motion.div>
   );

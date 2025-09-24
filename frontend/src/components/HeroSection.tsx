@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 
 export const HeroSection = () => {
-  const { isLoggedIn } = useAuth();
+  const isLoggedIn = false; 
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -31,19 +30,12 @@ export const HeroSection = () => {
   };
 
   const itemVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 30,
-      scale: 0.95
-    },
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: {
-        duration: 0.8,
-        ease: [0.4, 0, 0.2, 1],
-      },
+      transition: { duration: 0.8, ease: [0.4, 0, 0.2, 1] },
     },
   };
 
@@ -52,40 +44,25 @@ export const HeroSection = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.4, 0, 0.2, 1],
-      },
+      transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] },
     },
-    hover: {
-      scale: 1.05,
-      transition: {
-        duration: 0.2,
-        ease: "easeInOut",
-      },
-    },
-    tap: {
-      scale: 0.95,
-    },
+    hover: { scale: 1.05, transition: { duration: 0.2, ease: "easeInOut" } },
+    tap: { scale: 0.95 },
   };
 
   const floatingVariants = {
     animate: {
       y: [-10, 10, -10],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
-      },
+      transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
     },
   };
 
   const handleButtonClick = (destination: string) => {
     if (isLoggedIn) {
       navigate(destination);
-      return;
+    } else {
+      navigate(destination);
     }
-    navigate("/login");
   };
 
   const stars = Array.from({ length: 150 }).map((_, i) => ({
@@ -95,306 +72,215 @@ export const HeroSection = () => {
     size: Math.random() * 1.5 + 0.5,
     delay: Math.random() * 5,
   }));
+
   return (
     <>
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com"  />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans bg-[#0f1419]">
+        {/* Interactive Spotlight Effect */}
+        <div 
+          className="pointer-events-none fixed inset-0 z-30 transition duration-300"
+          style={{
+            background: `radial-gradient(400px at ${mousePosition.x}px ${mousePosition.y}px, rgba(54, 181, 211, 0.1), transparent 80%)`
+          }}
+        ></div>
+
         {/* Animated Background */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#1a1f3a] animate-gradient-x bg-[length:400%_400%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.5 }}
         ></motion.div>
-        
-        {/* Additional gradient layers for depth */}
+
+        {/* Starfield */}
+        <div className="absolute inset-0">
+          {stars.map(star => (
+            <motion.div
+              key={star.id}
+              className="absolute rounded-full bg-white/80"
+              style={{
+                left: star.left,
+                top: star.top,
+                width: star.size,
+                height: star.size,
+              }}
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: star.delay, ease: "easeInOut" }}
+            />
+          ))}
+        </div>
+
+        {/* Decorative Elements & Overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419] via-transparent to-[#1a1f3a]/50 opacity-80"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-[#36b5d3]/5 via-transparent to-[#14788f]/5 animate-pulse"></div>
+        <div className="absolute inset-0 grid-pattern opacity-10"></div>
         
-        {/* Geometric background elements with enhanced animations */}
-        <div className="absolute inset-0 grid-pattern opacity-20"></div>
-        
-        {/* Floating orbs with Framer Motion */}
+        {/* Parallax Container */}
         <motion.div 
-          className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-[#36b5d3]/10 blur-3xl"
-          variants={floatingVariants}
-          animate="animate"
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-1/4 left-1/4 w-48 h-48 rounded-full bg-[#14788f]/10 blur-2xl"
-          variants={floatingVariants}
-          animate="animate"
-          transition={{ delay: 1 }}
-        ></motion.div>
-        <motion.div 
-          className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-[#36b5d3]/15 blur-xl"
-          variants={floatingVariants}
-          animate="animate"
-          transition={{ delay: 2 }}
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-1/3 right-1/3 w-24 h-24 rounded-full bg-[#14788f]/15 blur-lg"
-          variants={floatingVariants}
-          animate="animate"
-          transition={{ delay: 3 }}
-        ></motion.div>
-        
-        {/* Enhanced floating geometric shapes */}
-        <motion.div 
-          className="absolute top-20 left-20 w-3 h-3 bg-[#36b5d3]/40 rounded-full shadow-lg shadow-[#36b5d3]/20"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.4, 0.8, 0.4]
-          }}
-          transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        ></motion.div>
-        <motion.div 
-          className="absolute top-40 right-32 w-2 h-2 bg-[#14788f]/50 rounded-full shadow-lg shadow-[#14788f]/20"
-          animate={{ 
-            scale: [1, 1.3, 1],
-            opacity: [0.5, 0.9, 0.5]
-          }}
-          transition={{ 
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-40 left-32 w-2.5 h-2.5 bg-[#36b5d3]/40 rounded-full shadow-lg shadow-[#36b5d3]/20"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.4, 0.8, 0.4]
-          }}
-          transition={{ 
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-20 right-20 w-2 h-2 bg-[#14788f]/45 rounded-full shadow-lg shadow-[#14788f]/20"
-          animate={{ 
-            scale: [1, 1.3, 1],
-            opacity: [0.45, 0.9, 0.45]
-          }}
-          transition={{ 
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 3
-          }}
-        ></motion.div>
-        
-        {/* Additional floating elements for more dynamic effect */}
-        <motion.div 
-          className="absolute top-1/3 left-1/2 w-4 h-4 bg-[#36b5d3]/20 rounded-full shadow-lg shadow-[#36b5d3]/10"
-          animate={{ 
-            y: [-5, 5, -5],
-            rotate: [0, 180, 360]
-          }}
-          transition={{ 
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.5
-          }}
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-1/2 right-1/4 w-3 h-3 bg-[#14788f]/30 rounded-full shadow-lg shadow-[#14788f]/10"
-          animate={{ 
-            y: [-3, 3, -3],
-            rotate: [0, -180, -360]
-          }}
-          transition={{ 
-            duration: 3.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1.5
-          }}
-        ></motion.div>
-        
-        {/* Glowing orbs */}
-        <motion.div 
-          className="absolute top-10 right-10 w-6 h-6 bg-[#36b5d3]/30 rounded-full blur-sm shadow-2xl shadow-[#36b5d3]/30"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3]
-          }}
-          transition={{ 
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        ></motion.div>
-        <motion.div 
-          className="absolute bottom-10 left-10 w-5 h-5 bg-[#14788f]/30 rounded-full blur-sm shadow-2xl shadow-[#14788f]/30"
-          animate={{ 
-            scale: [1, 1.3, 1],
-            opacity: [0.3, 0.7, 0.3]
-          }}
-          transition={{ 
-            duration: 3.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-        ></motion.div>
+            className="absolute inset-0"
+            animate={{
+                x: (mousePosition.x - (typeof window !== 'undefined' ? window.innerWidth / 2 : 0)) / -50,
+                y: (mousePosition.y - (typeof window !== 'undefined' ? window.innerHeight / 2 : 0)) / -50
+            }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        >
+            {/* Floating Orbs */}
+            <motion.div
+              className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-[#36b5d3]/10 blur-3xl"
+              variants={floatingVariants}
+              animate="animate"
+            ></motion.div>
+            <motion.div
+              className="absolute bottom-1/4 left-1/4 w-48 h-48 rounded-full bg-[#14788f]/10 blur-2xl"
+              variants={floatingVariants}
+              animate="animate"
+              transition={{ delay: 1 }}
+            ></motion.div>
+            <motion.div 
+              className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-[#36b5d3]/15 blur-xl"
+              variants={floatingVariants}
+              animate="animate"
+              transition={{ delay: 2 }}
+            ></motion.div>
+            <motion.div 
+              className="absolute bottom-1/3 right-1/3 w-24 h-24 rounded-full bg-[#14788f]/15 blur-lg"
+              variants={floatingVariants}
+              animate="animate"
+              transition={{ delay: 3 }}
+            ></motion.div>
+
+            {/* Pulsing Geometric Shapes */}
+            <motion.div 
+              className="absolute top-20 left-20 w-3 h-3 bg-[#36b5d3]/40 rounded-full shadow-lg shadow-[#36b5d3]/20"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            ></motion.div>
+            <motion.div 
+              className="absolute top-40 right-32 w-2 h-2 bg-[#14788f]/50 rounded-full shadow-lg shadow-[#14788f]/20"
+              animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.9, 0.5] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            ></motion.div>
+        </motion.div>
         
         {/* Content */}
-        <motion.div 
+        <motion.div
           className="relative z-10 text-center max-w-4xl mx-auto px-6"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           <div className="space-y-8">
-            {/* Enhanced badge */}
-            <motion.div 
-              className="inline-block px-6 py-3 rounded-2xl bg-[#36b5d3]/10 border border-[#36b5d3]/30 mb-6 backdrop-blur-sm hover:bg-[#36b5d3]/15 transition-all duration-300 shadow-lg"
+            {/* Badge */}
+            <motion.div
+              className="inline-block px-6 py-2 rounded-full bg-[#36b5d3]/10 border border-[#36b5d3]/30 backdrop-blur-sm"
               variants={itemVariants}
-              whileHover={{ 
-                scale: 1.05,
-                backgroundColor: "rgba(54, 181, 211, 0.15)"
-              }}
             >
-              <span className="text-sm text-[#36b5d3] font-medium tracking-wide">Why PlaceMentor AI?</span>
+              <span className="text-sm text-[#36b5d3] font-semibold tracking-wide">
+                PlaceMentor AI – Placement Clarity, Delivered
+              </span>
             </motion.div>
-            
-            {/* Main heading */}
-            <motion.div 
-              className="space-y-4"
-              variants={itemVariants}
-            >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#dee0e1] leading-tight tracking-tight">
-                Smarter Placements
-                <motion.span 
+
+            {/* Main Quote */}
+            <motion.div className="space-y-4" variants={itemVariants}>
+              <h1 className="text-5xl md:text-7xl font-extrabold text-[#dee0e1] leading-tight tracking-tight">
+                <motion.span
                   className="block bg-gradient-to-r from-[#36b5d3] via-[#14788f] to-[#36b5d3] bg-clip-text text-transparent animate-gradient-x bg-[length:200%_200%]"
-                  animate={{ 
-                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
-                  }}
-                  transition={{ 
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
+                  animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                >
+                  Smarter Placement,
+                </motion.span>
+                <motion.span
+                  className="block text-[#dee0e1] mt-1"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.8 }}
                 >
                   Start Here
                 </motion.span>
               </h1>
             </motion.div>
-            
-            {/* Enhanced description */}
-            <motion.p 
-              className="text-lg md:text-xl text-[#dee0e1]/80 max-w-2xl mx-auto leading-relaxed font-light"
+
+            {/* Description */}
+            <motion.p
+              className="text-lg md:text-xl text-[#dee0e1]/70 max-w-2xl mx-auto leading-relaxed"
               variants={itemVariants}
             >
-              Let AI help you crack the placement code—predict your chances, plan your path, and prep like a pro.
+              "Leverage AI to Decode Placement Trends—Personalize Your Career Approach with Data-Backed Insights and Expert Resources."
             </motion.p>
             
-            {/* Enhanced buttons */}
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
+            {/* Action Buttons */}
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6"
               variants={itemVariants}
             >
               <motion.button
                 onClick={() => handleButtonClick("/insights")}
-                className="
-                  bg-gradient-to-r from-[#36b5d3] to-[#14788f] 
-                  hover:from-[#14788f] hover:to-[#36b5d3] 
-                  text-white font-semibold px-8 py-4
-                  rounded-2xl shadow-2xl hover:shadow-[#36b5d3]/25 
-                  transition-all duration-300
-                  border-0 text-base
-                "
+                className="bg-gradient-to-r from-[#36b5d3] to-[#14788f] hover:from-[#14788f] hover:to-[#36b5d3] text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 flex items-center space-x-2"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
               >
-                Check My Placement Chances
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Check My Placement Chances</span>
               </motion.button>
               
               <motion.button
                 onClick={() => handleButtonClick("/interview")}
-                className="
-                  text-base px-8 py-4
-                  border-2 border-[#36b5d3]/30 
-                  hover:border-[#36b5d3] hover:bg-[#36b5d3]/10 
-                  rounded-2xl font-semibold backdrop-blur-sm
-                  text-[#dee0e1] hover:text-[#36b5d3]
-                  transition-all duration-300
-                  hover:shadow-lg bg-transparent
-                "
+                className="bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600 hover:bg-slate-800 text-[#dee0e1] font-bold px-8 py-3 rounded-xl backdrop-blur-sm transition-all duration-300 hover:shadow-lg flex items-center space-x-2"
                 variants={buttonVariants}
                 whileHover="hover"
                 whileTap="tap"
               >
-                I'm a Senior – Share My Experience
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                <span>I'm a Senior – Share My Experience</span>
               </motion.button>
             </motion.div>
 
-            {/* Enhanced status indicator */}
+            {/* Status Indicator */}
             <motion.div 
-              className="flex items-center justify-center gap-3 text-sm text-[#dee0e1]/70 mt-8"
+              className="flex items-center justify-center gap-2 text-sm text-[#dee0e1]/60 pt-8"
               variants={itemVariants}
             >
               <motion.div 
                 className="w-2 h-2 bg-[#36b5d3] rounded-full"
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.5, 1, 0.5]
-                }}
-                transition={{ 
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
+                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               ></motion.div>
               <span className="font-medium">Built for students. Powered by data. Backed by AI.</span>
             </motion.div>
           </div>
         </motion.div>
-
-        {/* Additional overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419]/30 via-transparent to-[#1a1f3a]/20 pointer-events-none"></div>
         
-        {/* Subtle animated mesh pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#36b5d3]/10 to-transparent animate-pulse"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14788f]/10 to-transparent animate-pulse" style={{ animationDelay: '1s' }}></div>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419]/30 via-transparent to-[#1a1f3a]/20 pointer-events-none"></div>
       </section>
-      
-      {/* Login modal removed; buttons route to /login if not authenticated */}
 
-      {/* Custom CSS for animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          .font-sans { font-family: 'Inter', sans-serif; }
           @keyframes gradient-x {
-            0%, 100% {
-              background-position: 0% 50%;
-            }
-            25% {
-              background-position: 100% 0%;
-            }
-            50% {
-              background-position: 100% 50%;
-            }
-            75% {
-              background-position: 0% 100%;
-            }
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
           }
-          
-          .animate-gradient-x {
-            animation: gradient-x 8s ease infinite;
+          .animate-gradient-x { animation: gradient-x 8s ease infinite; }
+          .grid-pattern {
+            background-image:
+              linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+            background-size: 3rem 3rem;
           }
-        `
-      }} />
+        `,
+        }}
+      />
     </>
   );
 };
