@@ -12,6 +12,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   user: User | null;
   token: string | null;
+  isHydrated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (email: string, password: string) => Promise<{ message: string; masked_email: string; expires_in: number }>;
@@ -34,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("auth");
@@ -43,27 +45,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(storedToken);
         setUser(storedUser);
         setIsLoggedIn(true);
-        // Verify token is still valid
+        // Soft-verify token; only clear on explicit unauthorized
         verifyToken(storedToken);
       }
     }
+    setIsHydrated(true);
   }, []);
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
       const response = await fetch(`${API_BASE_URL}/me`, {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
-      
-      if (!response.ok) {
-        // Token is invalid, clear auth
+      clearTimeout(timeout);
+
+      // Only clear auth on explicit unauthorized responses
+      if (response.status === 401 || response.status === 403) {
         clearAuth();
       }
+      // For other statuses (e.g., 404 if endpoint missing, 5xx, network issues),
+      // keep the existing session to avoid logging the user out on refresh.
     } catch (error) {
-      clearAuth();
+      // Network or timeout error: keep session
+      console.warn('Token verification skipped due to network/timeout:', error);
     }
   };
 
@@ -360,6 +370,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoggedIn, 
       user, 
       token,
+      isHydrated,
       login, 
       logout, 
       signup, 

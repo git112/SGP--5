@@ -1,8 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 export const HeroSection = () => {
-  const [showLogin, setShowLogin] = useState(false);
+  const { isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      setMousePosition({ x: event.clientX, y: event.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -66,6 +80,21 @@ export const HeroSection = () => {
     },
   };
 
+  const handleButtonClick = (destination: string) => {
+    if (isLoggedIn) {
+      navigate(destination);
+      return;
+    }
+    navigate("/login");
+  };
+
+  const stars = Array.from({ length: 150 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    top: `${Math.random() * 100}%`,
+    size: Math.random() * 1.5 + 0.5,
+    delay: Math.random() * 5,
+  }));
   return (
     <>
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -274,7 +303,7 @@ export const HeroSection = () => {
               variants={itemVariants}
             >
               <motion.button
-                onClick={() => setShowLogin(true)}
+                onClick={() => handleButtonClick("/insights")}
                 className="
                   bg-gradient-to-r from-[#36b5d3] to-[#14788f] 
                   hover:from-[#14788f] hover:to-[#36b5d3] 
@@ -291,7 +320,7 @@ export const HeroSection = () => {
               </motion.button>
               
               <motion.button
-                onClick={() => setShowLogin(true)}
+                onClick={() => handleButtonClick("/interview")}
                 className="
                   text-base px-8 py-4
                   border-2 border-[#36b5d3]/30 
@@ -341,66 +370,7 @@ export const HeroSection = () => {
         </div>
       </section>
       
-      {/* Enhanced Login Modal with Framer Motion */}
-      {showLogin && (
-        <motion.div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <motion.div 
-            className="bg-[#1a1f3a] border border-[#36b5d3]/30 rounded-2xl p-8 max-w-md w-full backdrop-blur-sm"
-            initial={{ 
-              opacity: 0, 
-              scale: 0.9,
-              y: 20
-            }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              y: 0
-            }}
-            exit={{ 
-              opacity: 0, 
-              scale: 0.9,
-              y: 20
-            }}
-            transition={{ 
-              duration: 0.4,
-              ease: [0.4, 0, 0.2, 1]
-            }}
-          >
-            <h2 className="text-2xl font-bold text-[#dee0e1] mb-4">Get Started</h2>
-            <p className="text-[#dee0e1]/80 mb-6">
-              Ready to transform your career journey? Sign up to get personalized placement insights.
-            </p>
-            <div className="space-y-4">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="input-modern"
-              />
-              <motion.button 
-                className="w-full bg-gradient-to-r from-[#36b5d3] to-[#14788f] text-white font-semibold py-3 rounded-xl hover:from-[#14788f] hover:to-[#36b5d3] transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Start Your Journey
-              </motion.button>
-            </div>
-            <motion.button
-              onClick={() => setShowLogin(false)}
-              className="absolute top-4 right-4 text-[#dee0e1]/60 hover:text-[#dee0e1] transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              ✕
-            </motion.button>
-          </motion.div>
-        </motion.div>
-      )}
+      {/* Login modal removed; buttons route to /login if not authenticated */}
 
       {/* Custom CSS for animations */}
       <style dangerouslySetInnerHTML={{
