@@ -2,22 +2,22 @@ import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { motion, AnimatePresence } from "framer-motion";
 
-const faqs = [
+ const faqs = [
   {
-    question: "How accurate are the job predictions?",
-    answer: "Our AI models are trained on extensive market data and have an accuracy rate of over 85%. The predictions consider your skills, experience, market trends, and company requirements to provide highly relevant job matches."
+    question: "How does the AI generate insights?",
+    answer: "Our AI analyzes real-time market data, industry trends, company hiring patterns, and your profile to generate personalized insights and recommendations for your career growth."
   },
   {
     question: "Can I get information about specific companies?",
     answer: "Yes! Our database includes detailed information about thousands of companies including culture, interview processes, salary ranges, growth opportunities, and current job openings."
   },
   {
-    question: "Is my personal information secure?",
-    answer: "Absolutely. We use enterprise-grade encryption and follow strict data privacy protocols. Your personal information is never shared with third parties without your explicit consent."
+    question: "Can I access sample resumes or resume templates?",
+    answer: "Yes. We provide a variety of curated sample resumes and ready-to-use templates tailored to different industries and roles, so you can build a standout resume quickly."
   },
   {
-    question: "How does the AI generate insights?",
-    answer: "Our AI analyzes real-time market data, industry trends, company hiring patterns, and your profile to generate personalized insights and recommendations for your career growth."
+    question: "Do you provide previous interview questions or guidance?",
+    answer: "Yes. You’ll find past interview questions type, plus tips on how to answer them effectively based on what interviewers typically look for."
   }
 ];
 

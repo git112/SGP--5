@@ -116,10 +116,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         // For login, authenticate directly
         await login(email, password);
         setSuccess("Login successful!");
-        setTimeout(() => {
-          onClose();
-          navigate("/insights");
-        }, 800);
+        navigate("/insights", { replace: true });
       }
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -139,10 +136,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
         // For signup, verify OTP and complete registration
         const result = await verifySignup(email, password, otp);
         setSuccess("Account created successfully! You can now login with your email and password.");
-        setTimeout(() => {
-          onClose();
-          navigate("/insights");
-        }, 2000);
+        navigate("/insights", { replace: true });
       } else {
         // Forgot password flow: OTP verification and prompt to reset
         setShowOTPVerification(false);
@@ -226,8 +220,8 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
     
     try {
       // Use OTP-based reset
-      const message = await resetPasswordWithOTP(email, otp, newPassword);
-      setSuccess(message || "Password reset successfully!");
+      await resetPasswordWithOTP(email, otp, newPassword);
+      setSuccess("Password reset successfully!");
       setTimeout(() => {
         setShowResetPassword(false);
         setShowForgotPassword(false);

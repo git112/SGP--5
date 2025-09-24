@@ -97,27 +97,6 @@ export const FeaturesSection = () => {
             </div>
           ))}
         </div>
-
-        {/* Final CTA Banner */}
-        <div className="mt-20 text-center slide-up">
-          <div className="relative max-w-4xl mx-auto p-8 bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm rounded-2xl border border-slate-600/50 shadow-2xl">
-            {/* Gradient border effect for CTA */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl opacity-20 blur-sm"></div>
-            <div className="absolute inset-[1px] bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl"></div>
-            
-            <div className="relative z-10">
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">
-                Ready to plan your placement journey the smart way?
-              </h3>
-              <p className="text-base text-slate-300 mb-6 font-light">
-                Let's make data your biggest strength. Try PlaceMentor AI today.
-              </p>
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-0">
-                Get Started Now
-              </Button>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
