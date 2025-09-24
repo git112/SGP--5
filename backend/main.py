@@ -24,7 +24,7 @@ load_dotenv(dotenv_path=_ENV_PATH)
 from sheets_service import sheets_service
 from companies_sheets_service import CompaniesSheetsService
 from interview_api import router as interview_router
-from excel_rag_service import excel_rag_service
+from rag_service import rag_service
 
 app = FastAPI()
 
@@ -34,8 +34,7 @@ auth_service = AuthService()
 # Initialize OTP service
 otp_service = OTPService()
 
-# Initialize Excel-based RAG service
-excel_rag_service.initialize_rag()
+# RAG service is automatically initialized when imported
 
 # Initialize Companies Sheets service
 companies_service = CompaniesSheetsService()
@@ -558,7 +557,7 @@ async def debug_values(range: str):
         raise HTTPException(status_code=500, detail=f"Debug values error: {str(e)}")
 
 # Chatbot RAG endpoint
-@app.post("/api/chat")
+@app.post("/chat")
 async def chat_with_bot(request: dict):
     """Chat endpoint for the RAG-based placement chatbot."""
     try:
@@ -567,10 +566,10 @@ async def chat_with_bot(request: dict):
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
-        # Process the query using Excel RAG service
-        response = excel_rag_service.process_query(query)
+        # Process the query using the new RAG service
+        response = rag_service.process_query(query)
         
-        return {"answer": response}
+        return response
         
     except HTTPException:
         raise
@@ -578,8 +577,13 @@ async def chat_with_bot(request: dict):
         logger.error(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
 
+# Route alias to match frontend path
+@app.post("/api/chat")
+async def api_chat(request: dict):
+    return await chat_with_bot(request)
+
 # Streaming chat endpoint
-@app.post("/api/chat/stream")
+@app.post("/chat/stream")
 async def chat_with_bot_stream(request: dict):
     """Streaming chat endpoint for real-time responses."""
     from fastapi.responses import StreamingResponse
@@ -593,7 +597,7 @@ async def chat_with_bot_stream(request: dict):
         
         def generate_stream():
             try:
-                for chunk in excel_rag_service.process_query_stream(query):
+                for chunk in rag_service.process_query_stream(query):
                     yield f"data: {json.dumps({'content': chunk})}\n\n"
                 yield f"data: {json.dumps({'done': True})}\n\n"
             except Exception as e:
@@ -610,6 +614,11 @@ async def chat_with_bot_stream(request: dict):
     except Exception as e:
         logger.error(f"Error in streaming chat endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+
+# Route alias to match frontend path
+@app.post("/api/chat/stream")
+async def api_chat_stream(request: dict):
+    return await chat_with_bot_stream(request)
 
 @app.get("/api/companies")
 async def get_companies(sheet_number: int = 5):
