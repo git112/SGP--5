@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, FileText, Brain, Target, TrendingUp, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from "@/components/ui/button";
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { resumeApi } from '../services/resumeApi';
@@ -116,17 +117,28 @@ const AnalyzerPage = () => {
   const isFallbackMode = results?.analysis_source === 'fallback';
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="relative min-h-screen text-foreground overflow-x-hidden">
+      {/* Background Layers to match site theme */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f3a] via-[#2d3561] to-[#0f172a]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419]/60 via-transparent to-[#1a1f3a]/80" />
+        <div className="absolute inset-0 grid-pattern opacity-10" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[#36b5d3]/10 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-[#14788f]/10 blur-2xl animate-pulse" />
+        <div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full bg-[#36b5d3]/15 blur-xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute bottom-1/3 right-1/3 w-24 h-24 rounded-full bg-[#14788f]/15 blur-lg animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
       <Header />
       
-      <div className="pt-20">
+      <div className="pt-20 relative z-10">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4 text-cyan-50">
+            <h1 className="text-4xl font-bold mb-4 text-white drop-shadow-glow">
               Resume Analyzer
             </h1>
-            <p className="text-cyan-200/70 text-lg">
+            <p className="text-[#dee0e1]/80 text-lg">
               Get AI-powered insights for your resume
             </p>
           </div>
@@ -134,15 +146,15 @@ const AnalyzerPage = () => {
           {/* Input Section */}
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             {/* Resume Upload */}
-            <Card className="bg-white/5 backdrop-blur-sm border-cyan-500/10">
+            <Card className="bg-white/10 backdrop-blur-xl border border-cyan-400/20">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-cyan-50">
-                  <Upload className="h-5 w-5 text-cyan-400" />
+                <CardTitle className="flex items-center gap-2 text-cyan-300">
+                  <Upload className="h-5 w-5 text-cyan-300" />
                   Resume Upload
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="border-2 border-dashed border-cyan-500/20 rounded-xl p-8 text-center hover:border-cyan-400/50 transition-all">
+                <div className="border-2 border-dashed border-cyan-400/30 rounded-xl p-8 text-center hover:border-cyan-400/60 transition-all">
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"
@@ -151,11 +163,11 @@ const AnalyzerPage = () => {
                     id="resume-upload"
                   />
                   <label htmlFor="resume-upload" className="cursor-pointer">
-                    <FileText className="h-12 w-12 text-cyan-400 mx-auto mb-4" />
-                    <p className="text-cyan-100 mb-2">
+                    <FileText className="h-12 w-12 text-cyan-300 mx-auto mb-4" />
+                    <p className="text-slate-100 mb-2">
                       {resumeFile ? resumeFile.name : 'Click to upload resume'}
                     </p>
-                    <p className="text-sm text-cyan-200/50">
+                    <p className="text-sm text-slate-300/70">
                       Supports PDF, DOC, DOCX
                     </p>
                   </label>
@@ -164,10 +176,10 @@ const AnalyzerPage = () => {
             </Card>
 
             {/* Job Description */}
-            <Card className="bg-white/5 backdrop-blur-sm border-cyan-500/10">
+            <Card className="bg-white/10 backdrop-blur-xl border border-cyan-400/20">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-cyan-50">
-                  <FileText className="h-5 w-5 text-cyan-400" />
+                <CardTitle className="flex items-center gap-2 text-cyan-300">
+                  <FileText className="h-5 w-5 text-cyan-300" />
                   Job Description
                 </CardTitle>
               </CardHeader>
@@ -176,7 +188,7 @@ const AnalyzerPage = () => {
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   placeholder="Paste the job description here..."
-                  className="w-full h-64 p-4 bg-white/5 border border-cyan-500/20 rounded-xl text-cyan-100 placeholder-cyan-200/30 focus:border-cyan-400 focus:outline-none transition-all"
+                  className="w-full h-64 p-4 bg-slate-800/30 border border-cyan-400/20 rounded-xl text-slate-100 placeholder-slate-300/40 focus:border-cyan-400 focus:outline-none transition-all"
                 />
               </CardContent>
             </Card>
@@ -192,10 +204,10 @@ const AnalyzerPage = () => {
 
           {/* Analyze Button */}
           <div className="text-center mb-12">
-            <button
+            <Button
               onClick={handleAnalyze}
               disabled={isAnalyzing || !resumeFile || !jobDescription.trim()}
-              className="px-8 py-4 bg-cyan-500 rounded-xl text-white font-medium text-lg hover:bg-cyan-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+              className="px-8 py-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
               {isAnalyzing ? (
                 <>
@@ -208,7 +220,7 @@ const AnalyzerPage = () => {
                   Analyze Resume
                 </>
               )}
-            </button>
+            </Button>
           </div>
 
           {/* Results Section */}
@@ -216,7 +228,7 @@ const AnalyzerPage = () => {
             <div className="space-y-8">
               {/* Fallback Mode Notice */}
               {isFallbackMode && (
-                <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-xl flex items-center gap-3">
+                <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center gap-3">
                   <AlertCircle className="h-5 w-5 text-yellow-400" />
                   <span className="text-yellow-300">
                     Advanced analysis is currently unavailable.
@@ -245,9 +257,9 @@ const AnalyzerPage = () => {
                   </div>
 
                   {/* Skills Analysis */}
-                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-cyan-500/10">
+                  <div className="bg-white/10 backdrop-blur-xl rounded-xl p-8 border border-cyan-400/20">
                     <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-cyan-50">
-                      <Target className="h-5 w-5 text-cyan-400" />
+                      <Target className="h-5 w-5 text-cyan-300" />
                       Skills Analysis
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -277,9 +289,9 @@ const AnalyzerPage = () => {
                   </div>
 
                   {/* Recommendations */}
-                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-cyan-500/10">
+                  <div className="bg-white/10 backdrop-blur-xl rounded-xl p-8 border border-cyan-400/20">
                     <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-cyan-50">
-                      <TrendingUp className="h-5 w-5 text-cyan-400" />
+                      <TrendingUp className="h-5 w-5 text-cyan-300" />
                       Recommendations
                     </h2>
                     <ul className="space-y-4">
