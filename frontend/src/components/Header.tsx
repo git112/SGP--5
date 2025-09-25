@@ -14,11 +14,11 @@ export const Header = () => {
 
     const navItems = [
         { name: "Home", path: "/" },
+        { name: "Insights", path: "/insights" },
+        { name: "Companies", path: "/companies" },
+        { name: "Interview", path: "/interview" },
         { name: "Resume Builder", path: "/resume-builder" },
         { name: "Resume Analyzer", path: "/resume-analyzer" },
-        { name: "Companies", path: "/companies" },
-        { name: "Insights", path: "/insights" },
-        { name: "Interview", path: "/interview" },
         { name: "About", path: "/about" },
     ];
 
