@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 
@@ -9,6 +9,9 @@ from services.ai_service_py import (
     interview_summary,
 )
 
+from resume_parser import parse_resume_bytes
+from job_description_validator import extract_required_skills
+from groq_analyzer import compute_match
 
 router = APIRouter(prefix="/api/competency", tags=["competency-test"])
 
@@ -90,6 +93,53 @@ def summary_endpoint(body: InterviewSummaryRequest):
 
 
 
+
+
+resume_router = APIRouter(prefix="/api/resume", tags=["resume-analyzer"])
+
+
+@resume_router.post("/analyze")
+async def analyze_resume(
+    resume: UploadFile = File(...),
+    jobDescription: str = Form(""),
+):
+    try:
+        # Basic validations
+        if not jobDescription.strip():
+            raise HTTPException(status_code=400, detail="Job description cannot be empty")
+
+        filename = resume.filename or ""
+        lower = filename.lower()
+        if not (lower.endswith(".pdf") or lower.endswith(".doc") or lower.endswith(".docx")):
+            raise HTTPException(status_code=400, detail="Invalid file type. Only PDF, DOC, DOCX are allowed")
+
+        content = await resume.read()
+        parsed = parse_resume_bytes(filename, content)
+        jd = extract_required_skills(jobDescription)
+
+        # Use Groq for enhanced analysis
+        from services.ai_service_py import analyze_resume_with_ai
+        
+        # Get basic match first
+        basic_match = compute_match(
+            parsed.get("skills", []),
+            jd.get("required_skills", []),
+            certifications=parsed.get("certifications", []),
+            projects=parsed.get("projects", []),
+        )
+        
+        # Enhanced analysis with Groq
+        enhanced_analysis = analyze_resume_with_ai(
+            resume_text=parsed.get("text", ""),
+            job_description=jobDescription,
+            basic_match=basic_match
+        )
+        
+        return enhanced_analysis
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze resume: {str(e)}")
 
 
 

@@ -24,6 +24,7 @@ load_dotenv(dotenv_path=_ENV_PATH)
 from sheets_service import sheets_service
 from companies_sheets_service import CompaniesSheetsService
 from interview_api import router as interview_router
+from interview_api import resume_router
 from rag_service import rag_service
 
 app = FastAPI()
@@ -53,6 +54,7 @@ app.add_middleware(
 
 # Mount competency test API (interview endpoints, Python port of Node service)
 app.include_router(interview_router)
+app.include_router(resume_router)
 
 # Google Sheets configuration
 SPREADSHEET_ID = os.getenv("GOOGLE_SPREADSHEET_ID", "your-spreadsheet-id-here")
