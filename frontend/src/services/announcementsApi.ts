@@ -41,4 +41,15 @@ export async function sendAnnouncementEmail(input: CreateAnnouncementInput & { e
   return res.json();
 }
 
+export async function deleteAnnouncement(id: string, token: string) {
+  const res = await fetch(`${API_URL}/api/announcements/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error('Failed to delete announcement');
+  return res.json();
+}
+
 
