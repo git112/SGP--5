@@ -32,6 +32,7 @@ backend/.env
 backend/data/
 backend/vector_db/
 
+
 # Google Sheets authentication
 credentials.json
 token.json

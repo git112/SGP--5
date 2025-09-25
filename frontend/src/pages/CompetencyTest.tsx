@@ -9,6 +9,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
 import { generateQuestions, analyzeAnswer, makeSummary, type GenerateQuestionsPayload, type Question } from "@/services/competencyApi";
+import { InterviewResponseInput } from "@/components/InterviewResponseInput";
+import { Copy, Check, Download, Sparkles } from "lucide-react";
+import MDEditor from "@uiw/react-md-editor";
 
 // Animation variants
 const containerVariants = {
@@ -46,6 +49,7 @@ export default function CompetencyTest() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [evaluations, setEvaluations] = useState<{ score: number; feedback: string }[]>([]);
   const [summary, setSummary] = useState<string>("");
+  const [copied, setCopied] = useState(false);
   const [started, setStarted] = useState(false);
   const [current, setCurrent] = useState(0);
   const [answerValid, setAnswerValid] = useState(false);
@@ -265,6 +269,28 @@ export default function CompetencyTest() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const copySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+
+  const downloadSummary = () => {
+    try {
+      const blob = new Blob([summary], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `overall-summary-${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {}
   };
 
   return (
@@ -519,13 +545,19 @@ export default function CompetencyTest() {
                       <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 border-cyan-400/30">Q{current + 1}</Badge>
                       <div className="font-medium text-white text-lg">{questions[current].question}</div>
                     </div>
-                    <Textarea 
-                      placeholder="Type your answer here... (minimum 10 characters)" 
+                    <InterviewResponseInput
                       value={answers[current] || ""}
-                      onChange={handleAnswerChange}
-                      className={`bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400 min-h-[120px] ${
-                        !answerValid && answers[current] ? "border-red-500/50 focus:border-red-500" : "focus:border-cyan-400"
-                      }`}
+                      onChange={(val) => {
+                        setAnswers(prev => {
+                          const copy = [...prev];
+                          copy[current] = val;
+                          return copy;
+                        });
+                        setAnswerValid(validateAnswer(val));
+                      }}
+                      placeholder="Type your answer here or use voice-to-text... (minimum 10 characters)"
+                      minLength={10}
+                      className="bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400"
                     />
                     {!answerValid && answers[current] && (
                       <p className="text-sm text-red-400 flex items-center gap-2">
@@ -606,15 +638,54 @@ export default function CompetencyTest() {
 
           {summary && (
             <motion.div variants={cardVariants} className="mt-8">
-              <Card className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-gradient-primary text-center">Overall Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-slate-700/30 rounded-lg p-6 border border-slate-600/30">
-                    <pre className="whitespace-pre-wrap text-sm text-slate-200 leading-relaxed">{summary}</pre>
-                  </div>
-                </CardContent>
+              <Card className="relative overflow-hidden border-0 shadow-2xl">
+                {/* Gradient Border */}
+                <div className="absolute inset-0 p-[1px] rounded-2xl bg-[linear-gradient(135deg,rgba(34,211,238,0.6),rgba(59,130,246,0.6),rgba(168,85,247,0.6))]"></div>
+                <div className="relative rounded-[14px] bg-slate-900/70 backdrop-blur-xl">
+                  <CardHeader className="border-b border-white/10 pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-indigo-500/30 flex items-center justify-center border border-white/10">
+                          <Sparkles className="w-5 h-5 text-cyan-300" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg md:text-xl font-extrabold bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">Overall Summary</CardTitle>
+                          <p className="text-xs text-slate-400 mt-1">Generated from your answers and evaluations</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copySummary}
+                          className="border-cyan-400/30 text-cyan-300 hover:bg-cyan-500/10"
+                          title="Copy summary"
+                        >
+                          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={downloadSummary}
+                          className="border-indigo-400/30 text-indigo-300 hover:bg-indigo-500/10"
+                          title="Download as text"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-0">
+                    <div className="p-6">
+                      <div className="rounded-xl border border-white/10 bg-gradient-to-b from-slate-800/60 to-slate-900/50 p-5 shadow-inner max-h-[50vh] overflow-y-auto custom-thin-scrollbar" data-color-mode="dark">
+                        <div className="wmde-markdown-var">
+                          <MDEditor.Markdown source={summary} style={{ whiteSpace: 'pre-wrap', backgroundColor: 'transparent' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
               </Card>
             </motion.div>
           )}

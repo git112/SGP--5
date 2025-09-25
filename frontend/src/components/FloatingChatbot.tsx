@@ -144,13 +144,15 @@ const FloatingChatbot = () => {
 
   return (
     <>
-      {/* Floating Button */}
-      <motion.div
-        className="fixed bottom-6 right-6 z-50"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 2, type: "spring", stiffness: 200 }}
-      >
+      {/* Floating Button - Only show when chat is closed */}
+      {!isOpen && (
+        <motion.div
+          className="fixed bottom-6 right-6 z-40"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ delay: 2, type: "spring", stiffness: 200 }}
+        >
         <div className="relative">
           {/* Unread Badge */}
           {unreadCount > 0 && (
@@ -201,13 +203,14 @@ const FloatingChatbot = () => {
           </Button>
         </div>
       </motion.div>
+      )}
 
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             className={(() => {
-              if (isMaximized) return 'fixed z-40 top-4 left-4 right-4 bottom-4';
+              if (isMaximized) return 'fixed z-50 top-8 left-8 right-8 bottom-8';
               if (isMinimized) return 'fixed z-40 right-6 bottom-24 w-80 h-16';
               return 'fixed z-40 right-6 bottom-24 w-80 h-96';
             })()}
@@ -221,7 +224,7 @@ const FloatingChatbot = () => {
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <Card className="h-full flex flex-col bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl overflow-hidden">
-              <CardHeader className="pb-3 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-b border-white/10 flex flex-row items-center justify-between">
+              <CardHeader className="pb-3 pt-4 px-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-b border-white/10 flex flex-row items-center justify-between flex-shrink-0">
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <div className="relative">
                     <Bot size={20} />
@@ -267,15 +270,15 @@ const FloatingChatbot = () => {
                 </div>
               </CardHeader>
               
-              <CardContent className="flex-1 flex flex-col p-0">
+              <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                 {!isMinimized && (
                   <>
                     {/* Messages Area */}
                     <div 
                       className="flex-1 p-4 overflow-y-auto chat-scrollbar" 
                       style={{ 
-                        maxHeight: isMaximized ? 'calc(100vh - 200px)' : '280px',
-                        minHeight: '200px'
+                        maxHeight: isMaximized ? 'calc(100vh - 240px)' : '260px',
+                        minHeight: '180px'
                       }}
                     >
                       <div className="space-y-4">
@@ -404,26 +407,6 @@ const FloatingChatbot = () => {
                             <Send size={16} />
                           )}
                         </Button>
-                      </div>
-                      
-                      {/* Quick Actions */}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {[
-                          "Show placement stats",
-                          "Top companies",
-                          "Interview tips",
-                          "Career guidance"
-                        ].map((action) => (
-                          <Button
-                            key={action}
-                            onClick={() => setInputValue(action)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs text-white/70 hover:text-white hover:bg-white/10 rounded-full px-3 py-1 h-7"
-                          >
-                            {action}
-                          </Button>
-                        ))}
                       </div>
                     </div>
                   </>
