@@ -14,6 +14,7 @@ import InterviewPage from "./pages/InterviewPage";
 import CompetencyTest from "./pages/CompetencyTest";
 import ResumeBuilder from "./pages/ResumeBuilder";
 import ResumeAnalyzer from "./pages/ResumeAnalyzer";
+import AdminPage from "./pages/AdminPage";
 import About from "./pages/AboutPage";
 import FloatingChatbot from "@/components/FloatingChatbot";
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path='/competency-test' element={<ProtectedRoute><CompetencyTest /></ProtectedRoute>} />
             <Route path='/resume-builder' element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
             <Route path='/resume-analyzer' element={<ProtectedRoute><ResumeAnalyzer /></ProtectedRoute>} />
+            <Route path='/admin' element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

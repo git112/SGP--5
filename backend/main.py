@@ -86,7 +86,27 @@ def signup(user: UserCreate):
     if users.find_one({"email": user.email}):
         raise HTTPException(status_code=400, detail="User already exists")
 
-    # Send OTP for email verification
+    # Send OTP for email verification (except dummy admin)
+    DUMMY_ADMIN = "abc.it@charusat.ac.in"
+    if user.email.lower() == DUMMY_ADMIN:
+        # Create or update dummy admin immediately without OTP
+        hashed_pw = hash_password(user.password)
+        users.update_one(
+            {"email": user.email},
+            {"$set": {
+                "email": user.email,
+                "password": hashed_pw,
+                "user_type": "faculty",
+                "otp_verified": True,
+                "created_at": datetime.utcnow()
+            }},
+            upsert=True
+        )
+        return OTPResponse(
+            message="Dummy admin account created. You can login now without OTP.",
+            masked_email=user.email[:2] + "***" + user.email[-10:],
+            expires_in=0
+        )
     result = otp_service.send_otp(user.email)
     
     if result["success"]:
@@ -164,6 +184,24 @@ def login(user: UserLogin):
     if not validate_email_domain(user.email):
         raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
     
+    # Direct login for the single dummy admin only (no OTP, no password check)
+    DUMMY_ADMIN = "abc.it@charusat.ac.in"
+    if user.email.lower() == DUMMY_ADMIN:
+        users = get_user_collection()
+        user_doc = users.find_one({"email": user.email})
+        if not user_doc:
+            # Create the dummy admin user if it doesn't exist
+            users.insert_one({
+                "email": user.email,
+                "user_type": "faculty",
+                "otp_verified": True,
+                "created_at": datetime.utcnow()
+            })
+        else:
+            users.update_one({"email": user.email}, {"$set": {"last_login": datetime.utcnow(), "otp_verified": True}})
+        token = auth_service.generate_jwt_token(user.email)
+        return {"message": "Login successful", "token": token, "email": user.email, "user_type": "faculty"}
+
     users = get_user_collection()
     user_doc = users.find_one({"email": user.email})
     if not user_doc:
@@ -237,7 +275,12 @@ def login_with_otp(request: LoginWithOTPRequest):
         if not validate_email_domain(request.email):
             raise HTTPException(status_code=400, detail="Please use your official Charusat email ID.")
         
-        # Verify OTP first
+        # For the dummy admin, force direct login only, not OTP login
+        DUMMY_ADMIN = "abc.it@charusat.ac.in"
+        if request.email.lower() == DUMMY_ADMIN:
+            raise HTTPException(status_code=400, detail="Use normal login for the dummy admin account (no OTP needed)")
+
+        # Verify OTP for all others
         otp_result = otp_service.verify_otp(request.email, request.otp)
         if not otp_result["success"]:
             raise HTTPException(status_code=400, detail=otp_result["message"])

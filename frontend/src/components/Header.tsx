@@ -90,6 +90,16 @@ export const Header = () => {
                                         </Link>
                                     </motion.div>
                                 ))}
+
+                                {user?.user_type === 'faculty' && (
+                                  <motion.div variants={navItemVariants} initial="hidden" animate="visible" whileHover="hover">
+                                    <Link to="/admin">
+                                      <Button variant="secondary" className="px-4 py-2 text-base font-medium bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg">
+                                        Admin Panel
+                                      </Button>
+                                    </Link>
+                                  </motion.div>
+                                )}
                             </nav>
 
                             {/* Mobile Menu Button */}

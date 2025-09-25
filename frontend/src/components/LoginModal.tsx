@@ -25,6 +25,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'student' | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [resetToken, setResetToken] = useState("");
@@ -100,6 +101,15 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
       setEmailError(getEmailValidationMessage());
       setLoading(false);
       return;
+    }
+    // Additional admin email rule when signing up as admin
+    if (isSignUp && selectedRole === 'admin') {
+      const adminPattern = /^[a-zA-Z0-9_]+\.it@charusat\.ac\.in$/;
+      if (!adminPattern.test(email)) {
+        setEmailError('Admin email must be of the form adminname.it@charusat.ac.in');
+        setLoading(false);
+        return;
+      }
     }
     
     try {
@@ -553,6 +563,30 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
           }}
         >
           <div className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label className="text-foreground">Select Role</Label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('admin')}
+                    className={`px-4 py-2 rounded-lg border ${selectedRole==='admin' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300' : 'border-slate-700/50 text-slate-300 hover:border-slate-600'}`}
+                  >
+                    Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('student')}
+                    className={`px-4 py-2 rounded-lg border ${selectedRole==='student' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300' : 'border-slate-700/50 text-slate-300 hover:border-slate-600'}`}
+                  >
+                    Student
+                  </button>
+                </div>
+                {selectedRole === 'admin' && (
+                  <p className="text-xs text-amber-300">Admin email must be adminname.it@charusat.ac.in</p>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">Email</Label>
               <div className="relative">
