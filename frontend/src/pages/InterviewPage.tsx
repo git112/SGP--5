@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-// Removed unused Card imports
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { InterviewResponseInput } from "@/components/InterviewResponseInput";
+import { Mic, Play, RotateCcw } from "lucide-react";
 
 // Mock data for demonstration
 const hrTechnicalQuestions = [
@@ -1780,11 +1782,33 @@ export default function InterviewPage() {
   // Category filter
   const [selectedCategory, setSelectedCategory] = useState("all");
   
-  
   // Tab 2 filters
   const [difficultyFilter, setDifficultyFilter] = useState("all");
 
-  // No floating button; each section will be scrollable
+  // Interview Practice State
+  const [activeTab, setActiveTab] = useState<"questions" | "practice">("questions");
+  const [selectedQuestion, setSelectedQuestion] = useState<any>(null);
+  const [practiceAnswer, setPracticeAnswer] = useState("");
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+
+  // Interview Practice Handlers
+  const startPractice = (question: any) => {
+    setSelectedQuestion(question);
+    setPracticeAnswer("");
+    setIsPracticeMode(true);
+    setActiveTab("practice");
+  };
+
+  const endPractice = () => {
+    setIsPracticeMode(false);
+    setSelectedQuestion(null);
+    setPracticeAnswer("");
+    setActiveTab("questions");
+  };
+
+  const handleAnswerChange = (value: string) => {
+    setPracticeAnswer(value);
+  };
 
   // Function to determine category based on tags and content
   const getCategoryFromTags = (question) => {
@@ -1911,7 +1935,7 @@ export default function InterviewPage() {
       {/* Main Content - Two Column Layout */}
       <div className="container mx-auto pt-10 pb-10 px-4 max-w-7xl relative z-10">
         <motion.div 
-          className="text-center mb-12"
+          className="text-center mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -1919,15 +1943,183 @@ export default function InterviewPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight drop-shadow-glow">
             Interview Questions & Coding Prep
           </h2>
-          <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light mb-8">
+          <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light mb-6">
             Practice real interview questions and filter by type to prepare for your interviews!
           </p>
+          
+          {/* Tab Navigation */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex rounded-lg bg-slate-800/50 p-1 backdrop-blur-sm border border-slate-600/30">
+              <button
+                onClick={() => setActiveTab("questions")}
+                className={`px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === "questions"
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                }`}
+              >
+                Browse Questions
+              </button>
+              <button
+                onClick={() => setActiveTab("practice")}
+                className={`px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === "practice"
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                }`}
+              >
+                Practice Mode
+              </button>
+            </div>
+          </div>
         </motion.div>
-        <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 relative">
-          {/* Vertical Divider for desktop */}
-          <div className="hidden lg:block absolute left-1/2 top-0 h-full w-px bg-gradient-to-b from-cyan-400/10 via-slate-400/20 to-purple-400/10 z-10" style={{transform: 'translateX(-50%)'}}></div>
-          {/* Left: HR/Technical/Domain-based Questions */}
-          <div className="flex-1 min-w-0 px-0 lg:pr-8 flex flex-col">
+        {/* Practice Mode */}
+        {activeTab === "practice" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-4xl mx-auto"
+          >
+            {!isPracticeMode ? (
+              // Practice Mode Selection
+              <Card className="bg-white/10 backdrop-blur-xl border border-cyan-400/20">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-cyan-300 text-center">
+                    Choose a Question to Practice
+                  </CardTitle>
+                  <p className="text-slate-300 text-center">
+                    Select any question below to start practicing with voice-to-text support
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto custom-thin-scrollbar">
+                    {filteredHRTech.slice(0, 10).map((question, index) => {
+                      const actualCategory = getCategoryFromTags(question);
+                      return (
+                        <motion.div
+                          key={`${actualCategory}-${question.text}-${index}`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="p-4 bg-slate-800/30 border border-slate-600/30 rounded-lg hover:bg-slate-700/30 transition-all duration-200 cursor-pointer group"
+                          onClick={() => startPractice(question)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <Badge variant="outline" className="border-cyan-400/30 text-cyan-300 text-xs">
+                              {actualCategory}
+                            </Badge>
+                            <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <h3 className="text-white font-medium mb-2 group-hover:text-cyan-100 transition-colors">
+                            {question.text}
+                          </h3>
+                          {question.tags && question.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {question.tags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="px-2 py-1 bg-slate-700/50 text-slate-300 text-xs rounded">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              // Practice Session
+              <Card className="bg-white/10 backdrop-blur-xl border border-cyan-400/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl text-cyan-300">
+                        Practice Session
+                      </CardTitle>
+                      <Badge variant="outline" className="border-cyan-400/30 text-cyan-300 text-xs mt-2">
+                        {getCategoryFromTags(selectedQuestion)}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={endPractice}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      End Practice
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Question */}
+                  <div className="p-4 bg-slate-800/30 border border-slate-600/30 rounded-lg">
+                    <h3 className="text-white text-lg font-medium mb-3">
+                      {selectedQuestion?.text}
+                    </h3>
+                    {selectedQuestion?.tags && selectedQuestion.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedQuestion.tags.map((tag: string) => (
+                          <span key={tag} className="px-2 py-1 bg-slate-700/50 text-slate-300 text-xs rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Answer Input (text only) */}
+                  <div>
+                    <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                      Your Answer (text only)
+                    </h4>
+                    <textarea
+                      value={practiceAnswer}
+                      onChange={(e) => handleAnswerChange(e.target.value)}
+                      placeholder="Type your answer here... (minimum 10 characters)"
+                      className="w-full min-h-[120px] resize-none rounded-md border border-slate-600/50 bg-slate-800/30 p-3 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div className="text-sm text-slate-400">
+                    Answer length: {practiceAnswer.length} characters
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPracticeAnswer("")}
+                      disabled={practiceAnswer.length === 0}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={practiceAnswer.length < 10}
+                      className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                    >
+                      Submit Answer
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            )}
+          </motion.div>
+        )}
+
+        {/* Questions Browse Mode */}
+        {activeTab === "questions" && (
+          <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 relative">
+            {/* Vertical Divider for desktop */}
+            <div className="hidden lg:block absolute left-1/2 top-0 h-full w-px bg-gradient-to-b from-cyan-400/10 via-slate-400/20 to-purple-400/10 z-10" style={{transform: 'translateX(-50%)'}}></div>
+            {/* Left: HR/Technical/Domain-based Questions */}
+            <div className="flex-1 min-w-0 px-0 lg:pr-8 flex flex-col">
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-cyan-300 mb-2 tracking-tight">Interview Questions by Category</h3>
               <p className="text-sm text-slate-200/80 mb-4">
@@ -2122,9 +2314,10 @@ export default function InterviewPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
       {/* Global CTA below both sections */}
-      <div className="container mx-auto px-4 pb-12">
+      <div className="container mx-auto px-4 pb-20">
         <div className="flex justify-center">
           <Button
             variant="hero"

@@ -32,26 +32,87 @@ export default function CompanyDirectory() {
     fetchCompanies();
   }, []);
 
-  // Filter logic for real-time data
-  const filtered = companiesData?.companies?.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) &&
-    (location === "All Locations" || c.location === location) &&
-    (pkg === "All Packages" || c.packageLPA.toString() === pkg)
-  ) || [];
+  // Helpers
+  const isNA = (val?: string | number | null) => {
+    if (val === null || val === undefined) return true;
+    const s = String(val).trim().toLowerCase();
+    // treat common placeholders as N/A
+    return s === "n/a" || s === "na" || s === "n" || s === "none" || s === "null" || s === "not available" || s === "";
+  };
+
+  // Normalize helpers
+  const normalizeLocation = (loc?: string) => {
+    if (!loc) return "";
+    // Keep only the first segment before any '/'
+    return loc.split("/")[0].trim();
+  };
+
+  const extractPackageRangeKey = (company: Company) => {
+    const display = company.packageDisplay?.toString() ?? "";
+    const nums = (display.match(/\d+(?:\.\d+)?/g) || []).map(n => parseFloat(n));
+    if (nums.length >= 2) {
+      const min = Math.min(nums[0], nums[1]);
+      const max = Math.max(nums[0], nums[1]);
+      return `${min}-${max}`;
+    }
+    if (nums.length === 1) {
+      const n = nums[0];
+      return `${n}-${n}`;
+    }
+    const lpa = Number(company.packageLPA);
+    return Number.isFinite(lpa) ? `${lpa}-${lpa}` : "";
+  };
 
   // Determine numeric sort value using the highest figure from package range or fallback
   const getPackageSortValue = (company: Company): number => {
-    // Prefer parsing from packageDisplay to capture ranges like "5.4-7.2"
     const display = company.packageDisplay?.toString() ?? "";
     const nums = (display.match(/\d+(?:\.\d+)?/g) || []).map(n => parseFloat(n));
     if (nums.length > 0) {
-      // Use the highest number in the display range
       return Math.max(...nums);
     }
-    // Fallback to packageLPA if it's a finite number
     const lpa = Number(company.packageLPA);
-    return Number.isFinite(lpa) ? lpa : -Infinity; // push N/A to bottom
+    return Number.isFinite(lpa) ? lpa : -Infinity;
   };
+
+  // Clean and deduplicate companies:
+  // - remove entries with N/A package (no numeric value)
+  // - remove entries with N/A location
+  // - remove entries with missing/NA roles
+  // - dedupe by name (case-insensitive), keep the one with highest package
+  const cleanedUniqueCompanies: Company[] = (() => {
+    const list = companiesData?.companies ?? [];
+    const dedupe = new Map<string, Company>();
+    for (const c of list) {
+      const pkgValue = getPackageSortValue(c);
+      const hasValidPackage = Number.isFinite(pkgValue) && pkgValue !== -Infinity;
+      const normalizedLoc = normalizeLocation(c.location);
+      const hasValidLocation = !isNA(normalizedLoc);
+      const cleanedRoles = (c.roles || []).filter(r => !isNA(r));
+      const hasValidRoles = cleanedRoles.length > 0;
+      if (!hasValidPackage || !hasValidLocation || !hasValidRoles) continue;
+
+      const nameKey = c.name.trim().toLowerCase();
+      const existing = dedupe.get(nameKey);
+      if (!existing) {
+        dedupe.set(nameKey, { ...c, roles: cleanedRoles, location: normalizedLoc });
+      } else {
+        const existingVal = getPackageSortValue(existing);
+        if (pkgValue > existingVal) {
+          dedupe.set(nameKey, { ...c, roles: cleanedRoles, location: normalizedLoc });
+        }
+      }
+    }
+    return Array.from(dedupe.values());
+  })();
+
+  // Filter logic for real-time data on cleaned list
+  const filtered = cleanedUniqueCompanies.filter(c => {
+    const pkgKey = extractPackageRangeKey(c);
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchesLocation = location === "All Locations" || normalizeLocation(c.location) === location;
+    const matchesPkg = pkg === "All Packages" || pkgKey === pkg;
+    return matchesSearch && matchesLocation && matchesPkg;
+  });
 
   // Sort by highest package first using derived value
   const sortedByPackageDesc = [...filtered].sort((a, b) => getPackageSortValue(b) - getPackageSortValue(a));
@@ -128,9 +189,12 @@ export default function CompanyDirectory() {
               onChange={e => setLocation(e.target.value)}
             >
               <option>All Locations</option>
-              {companiesData?.filters?.locations?.map(location => (
-                <option key={location} value={location}>{location}</option>
-              )) || []}
+              {[...new Set((companiesData?.filters?.locations || []).map(normalizeLocation))]
+                .filter(l => l)
+                .sort((a, b) => a.localeCompare(b))
+                .map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
             </select>
             <select
               className="w-full max-w-xs px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select"
@@ -138,9 +202,21 @@ export default function CompanyDirectory() {
               onChange={e => setPkg(e.target.value)}
             >
               <option>All Packages</option>
-              {companiesData?.filters.packages.map(pkg => (
-                <option key={pkg} value={pkg.toString()}>{pkg} LPA</option>
-              ))}
+              {(() => {
+                const keys = new Set<string>();
+                for (const c of cleanedUniqueCompanies) {
+                  const key = extractPackageRangeKey(c);
+                  if (key) keys.add(key);
+                }
+                const arr = Array.from(keys).map(k => {
+                  const parts = k.split("-").map(Number);
+                  return { key: k, min: parts[0], max: parts[1] };
+                });
+                arr.sort((a, b) => b.max - a.max || b.min - a.min);
+                return arr.map(({ key, min, max }) => (
+                  <option key={key} value={key}>{min === max ? `${min} LPA` : `${min}-${max} LPA`}</option>
+                ));
+              })()}
             </select>
           </motion.div>
           {/* Loading State */}
@@ -216,7 +292,7 @@ export default function CompanyDirectory() {
                       status={c.status}
                       packageLPA={c.packageLPA}
                       packageDisplay={c.packageDisplay}
-                      roles={c.roles}
+                      roles={[...new Set((c.roles || []).filter(r => r && r.trim() && r.toLowerCase() !== 'n/a'))]}
                       eligibility={c.eligibility}
                       location={c.location}
                     />
