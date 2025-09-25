@@ -13,6 +13,7 @@ from signup.database import get_user_collection
 from signup.auth_service import AuthService
 from signup.otp_service import OTPService
 from signup.database import db
+from bson.objectid import ObjectId
 import os
 from dotenv import load_dotenv
 from typing import Optional
@@ -730,11 +731,18 @@ async def send_announcement_email(payload: dict, current_user: str = Depends(get
         if user_type != "faculty":
             raise HTTPException(status_code=403, detail="Only admin can send emails")
 
+        import re
         emails = payload.get("emails", [])
         if isinstance(emails, str):
-            emails = [e.strip() for e in emails.split(",") if e.strip()]
+            # split on commas, semicolons, whitespace or newlines
+            emails = re.split(r"[\s,;]+", emails)
+        # normalize and validate
+        emails = [e.strip() for e in emails if e and isinstance(e, str)]
+        email_re = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+        invalid = [e for e in emails if not email_re.match(e)]
+        emails = [e for e in emails if email_re.match(e)]
         if not emails:
-            raise HTTPException(status_code=400, detail="No recipient emails provided")
+            raise HTTPException(status_code=400, detail=f"No valid recipient emails provided. Invalid: {invalid[:5]}")
 
         company = payload.get("company", "")
         location = payload.get("location", "")
@@ -755,17 +763,50 @@ async def send_announcement_email(payload: dict, current_user: str = Depends(get
             "Regards,\nPlacement Cell"
         )
 
-        failures = []
-        for email in emails:
-            ok = auth_service.send_plain_email(email, subject, body)
-            if not ok:
-                failures.append(email)
-
-        return {"sent": len(emails) - len(failures), "failed": failures}
+        # Use bulk send via BCC for reliability and speed
+        bulk_result = auth_service.send_bulk_email(emails, subject, body)
+        return {"sent": bulk_result.get("sent", 0), "failed": bulk_result.get("failed", []), "invalid": invalid, "error": bulk_result.get("error")}
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error sending announcement email: {str(e)}")
+
+@app.delete("/api/announcements/{announcement_id}")
+async def delete_announcement(announcement_id: str, current_user: str = Depends(get_current_user)):
+    try:
+        users = db["users"]
+        user_doc = users.find_one({"email": current_user})
+        user_type = user_doc.get("user_type") if user_doc else None
+        if user_type != "faculty":
+            raise HTTPException(status_code=403, detail="Only admin can delete announcements")
+
+        try:
+            _id = ObjectId(announcement_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid announcement id")
+
+        res = db["announcements"].delete_one({"_id": _id})
+        if res.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Announcement not found")
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting announcement: {str(e)}")
+
+# Test email endpoint
+@app.post("/api/test-email")
+async def test_email(payload: dict):
+    try:
+        test_email = payload.get("email", "test@example.com")
+        result = auth_service.send_plain_email(
+            test_email, 
+            "📣 Test Email from PlaceMentor AI", 
+            "This is a test email to verify email functionality is working correctly.\n\nRegards,\nPlaceMentor AI Team"
+        )
+        return {"success": result, "message": "Test email sent" if result else "Failed to send test email"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sending test email: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

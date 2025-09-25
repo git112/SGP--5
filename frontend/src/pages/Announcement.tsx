@@ -2,9 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
+import { deleteAnnouncement } from '@/services/announcementsApi';
+import { toast } from 'sonner';
 
 type Announcement = {
   _id: string;
@@ -21,6 +25,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const AnnouncementPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const { user, token } = useAuth();
 
   const { data } = useQuery<Announcement[]>({
     queryKey: ['announcements', sortOrder],
@@ -65,9 +70,32 @@ const AnnouncementPage: React.FC = () => {
             <motion.div key={a._id} variants={cardVariants} initial="hidden" animate="visible" whileHover="hover">
               <Card className="bg-slate-800/40 backdrop-blur-md border border-slate-700/40 shadow-xl rounded-2xl">
                 <CardHeader>
-                  <CardTitle className="text-cyan-50 flex items-center justify-between">
+                  <CardTitle className="text-cyan-50 flex items-center justify-between gap-4">
                     <span>{a.company}</span>
-                    <span className="text-sm text-cyan-200/80">{new Date(a.created_at).toLocaleString()}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-cyan-200/80">{new Date(a.created_at).toLocaleString()}</span>
+                      {user?.user_type === 'faculty' && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={async ()=>{
+                            if (!token) { toast.error('Login expired'); return; }
+                            if (!confirm('Delete this announcement?')) return;
+                            try {
+                              await deleteAnnouncement(a._id, token);
+                              toast.success('Announcement removed');
+                              // Optimistic refresh
+                              window.location.reload();
+                            } catch (e: any) {
+                              toast.error(e.message || 'Delete failed');
+                            }
+                          }}
+                          className="bg-slate-700/70 hover:bg-slate-600/70 text-cyan-100 border border-cyan-500/20"
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-cyan-100 space-y-1">
