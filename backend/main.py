@@ -12,6 +12,7 @@ from signup.utils import (
 from signup.database import get_user_collection
 from signup.auth_service import AuthService
 from signup.otp_service import OTPService
+from signup.database import db
 import os
 from dotenv import load_dotenv
 from typing import Optional
@@ -677,6 +678,94 @@ async def get_companies(sheet_number: int = 5):
     except Exception as e:
         logger.error(f"Error in companies endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching companies data")
+
+# Announcements endpoints
+@app.post("/api/announcements")
+async def create_announcement(payload: dict, current_user: str = Depends(get_current_user)):
+    try:
+        users = db["users"]
+        user_doc = users.find_one({"email": current_user})
+        user_type = user_doc.get("user_type") if user_doc else None
+        if user_type != "faculty":
+            raise HTTPException(status_code=403, detail="Only admin can create announcements")
+
+        required = ["company", "location", "role", "package", "date"]
+        if not all(k in payload and str(payload[k]).strip() for k in required):
+            raise HTTPException(status_code=400, detail="Missing required fields")
+
+        announcement = {
+            "company": payload.get("company"),
+            "location": payload.get("location"),
+            "role": payload.get("role"),
+            "package": payload.get("package"),
+            "date": payload.get("date"),
+            "instructions": payload.get("instructions", ""),
+            "created_at": datetime.utcnow(),
+        }
+        result = db["announcements"].insert_one(announcement)
+        announcement["_id"] = str(result.inserted_id)
+        return announcement
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating announcement: {str(e)}")
+
+@app.get("/api/announcements")
+async def list_announcements(sort: str = "newest"):
+    try:
+        sort_key = ("created_at", -1) if sort == "newest" else ("created_at", 1)
+        docs = list(db["announcements"].find({}).sort([sort_key]))
+        for d in docs:
+            d["_id"] = str(d["_id"])
+        return docs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching announcements: {str(e)}")
+
+@app.post("/api/announcements/send-email")
+async def send_announcement_email(payload: dict, current_user: str = Depends(get_current_user)):
+    try:
+        users = db["users"]
+        user_doc = users.find_one({"email": current_user})
+        user_type = user_doc.get("user_type") if user_doc else None
+        if user_type != "faculty":
+            raise HTTPException(status_code=403, detail="Only admin can send emails")
+
+        emails = payload.get("emails", [])
+        if isinstance(emails, str):
+            emails = [e.strip() for e in emails.split(",") if e.strip()]
+        if not emails:
+            raise HTTPException(status_code=400, detail="No recipient emails provided")
+
+        company = payload.get("company", "")
+        location = payload.get("location", "")
+        role = payload.get("role", "")
+        package = payload.get("package", "")
+        date = payload.get("date", "")
+
+        subject = f"\ud83d\udce3 Upcoming Company Announcement \u2013 {company}" if company else "\ud83d\udce3 Upcoming Company Announcement"
+        body = (
+            "Dear Student,\n\n"
+            "Please note the details of the upcoming placement drive:\n\n"
+            f"Company: {company}\n"
+            f"Location: {location}\n"
+            f"Role: {role}\n"
+            f"CTC: {package}\n"
+            f"Date: {date}\n\n"
+            "Please be prepared accordingly.\n\n"
+            "Regards,\nPlacement Cell"
+        )
+
+        failures = []
+        for email in emails:
+            ok = auth_service.send_plain_email(email, subject, body)
+            if not ok:
+                failures.append(email)
+
+        return {"sent": len(emails) - len(failures), "failed": failures}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sending announcement email: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -98,3 +98,23 @@ class AuthService:
             return None
         except jwt.InvalidTokenError:
             return None
+
+    def send_plain_email(self, to_email: str, subject: str, body_text: str) -> bool:
+        try:
+            if not all([self.smtp_username, self.smtp_password]):
+                print("SMTP credentials not configured")
+                return False
+            msg = MIMEMultipart()
+            msg['From'] = self.smtp_username
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body_text, 'plain'))
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            server.starttls()
+            server.login(self.smtp_username, self.smtp_password)
+            server.send_message(msg)
+            server.quit()
+            return True
+        except Exception as e:
+            print(f"Failed to send email to {to_email}: {e}")
+            return False
