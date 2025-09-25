@@ -304,5 +304,3 @@ const AnalyzerPage = () => {
 };
 
 export default AnalyzerPage;
-
-
