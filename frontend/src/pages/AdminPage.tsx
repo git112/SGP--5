@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
+import { createAnnouncement, sendAnnouncementEmail } from '@/services/announcementsApi';
+import { toast } from 'sonner';
 
 const AdminPage: React.FC = () => {
   const [announcement, setAnnouncement] = useState({
@@ -21,9 +24,49 @@ const AdminPage: React.FC = () => {
   const [insightsType, setInsightsType] = useState<string>('');
   const [interviewType, setInterviewType] = useState<string>('');
 
+  const { token } = useAuth();
+
   const addAnnouncement = () => {
     setAnnouncements(prev => [announcement, ...prev]);
     setAnnouncement({ company: '', location: '', packageOffers: '', jobDescription: '', date: '' });
+  };
+
+  const sendToBoard = async (a: any) => {
+    try {
+      if (!token) { toast.error('Please login again'); return; }
+      await createAnnouncement({
+        company: a.company,
+        location: a.location,
+        role: a.jobDescription?.split('\n')[0] || 'Role',
+        package: a.packageOffers,
+        date: a.date,
+        instructions: a.jobDescription,
+      }, token);
+      toast.success('Sent to Announcement board');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to send');
+    }
+  };
+
+  const sendMail = async (a: any) => {
+    try {
+      if (!token) { toast.error('Please login again'); return; }
+      const emailsCsv = prompt('Enter email IDs (comma-separated) or leave empty to cancel');
+      if (!emailsCsv) return;
+      const emails = emailsCsv.split(',').map(s => s.trim()).filter(Boolean);
+      const res = await sendAnnouncementEmail({
+        company: a.company,
+        location: a.location,
+        role: a.jobDescription?.split('\n')[0] || 'Role',
+        package: a.packageOffers,
+        date: a.date,
+        instructions: a.jobDescription,
+        emails,
+      }, token);
+      toast.success(`Emails sent: ${res.sent}, failed: ${res.failed?.length || 0}`);
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to send emails');
+    }
   };
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.6 } } };
@@ -92,15 +135,17 @@ const AdminPage: React.FC = () => {
                   </Button>
                   <Button
                     variant="secondary"
+                    onClick={() => sendToBoard(announcement)}
                     className="bg-slate-700/70 hover:bg-slate-600/70 active:bg-slate-600 text-cyan-100 border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60"
                   >
-                    Send Here
+                    Send to Board
                   </Button>
                   <Button
                     variant="secondary"
+                    onClick={() => sendMail(announcement)}
                     className="bg-slate-700/70 hover:bg-slate-600/70 active:bg-slate-600 text-cyan-100 border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60"
                   >
-                    Send Through Mail
+                    Send via Email
                   </Button>
                 </div>
 
@@ -112,8 +157,8 @@ const AdminPage: React.FC = () => {
                       <div className="text-cyan-100 mt-2">Package: {a.packageOffers}</div>
                       <div className="text-cyan-100 mt-1">{a.jobDescription}</div>
                     <div className="mt-3 flex gap-2">
-                        <Button size="sm" className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send Here</Button>
-                        <Button size="sm" variant="secondary" className="bg-slate-700/80 text-cyan-100 hover:bg-slate-600/80 active:bg-slate-600 border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send Through Mail</Button>
+                        <Button size="sm" onClick={()=>sendToBoard(a)} className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send to Board</Button>
+                        <Button size="sm" variant="secondary" onClick={()=>sendMail(a)} className="bg-slate-700/80 text-cyan-100 hover:bg-slate-600/80 active:bg-slate-600 border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send via Email</Button>
                       </div>
                     </div>
                   ))}
