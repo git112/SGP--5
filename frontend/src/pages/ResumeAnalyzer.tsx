@@ -256,37 +256,7 @@ const AnalyzerPage = () => {
                     />
                   </div>
 
-                  {/* Skills Analysis */}
-                  <div className="bg-white/10 backdrop-blur-xl rounded-xl p-8 border border-cyan-400/20">
-                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-cyan-50">
-                      <Target className="h-5 w-5 text-cyan-300" />
-                      Skills Analysis
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div>
-                        <h3 className="text-lg font-medium mb-4 text-green-400">Matching Skills</h3>
-                        <ul className="space-y-3">
-                          {results.skills_analysis?.matching_skills?.map((skill, index) => (
-                            <li key={index} className="flex items-center gap-3 text-cyan-100">
-                              <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
-                              <span>{skill}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium mb-4 text-red-400">Missing Skills</h3>
-                        <ul className="space-y-3">
-                          {results.skills_analysis?.missing_skills?.map((skill, index) => (
-                            <li key={index} className="flex items-center gap-3 text-cyan-100">
-                              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
-                              <span>{skill}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
+                  
 
                   {/* Recommendations */}
                   <div className="bg-white/10 backdrop-blur-xl rounded-xl p-8 border border-cyan-400/20">

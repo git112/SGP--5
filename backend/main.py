@@ -1,3 +1,8 @@
+import httpx
+from sse_starlette.sse import EventSourceResponse 
+import json 
+RAG_SERVICE_URL = "http://localhost:8001"
+
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -27,7 +32,7 @@ from sheets_service import sheets_service
 from companies_sheets_service import CompaniesSheetsService
 from interview_api import router as interview_router
 from interview_api import resume_router
-from rag_service import rag_service
+
 
 app = FastAPI()
 
@@ -606,58 +611,69 @@ async def debug_values(range: str):
 # Chatbot RAG endpoint
 @app.post("/chat")
 async def chat_with_bot(request: dict):
-    """Chat endpoint for the RAG-based placement chatbot."""
+    """
+    Chat endpoint. Forwards the query to the separate RAG service.
+    """
     try:
         query = request.get("query", "").strip()
-        
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
-        # Process the query using the new RAG service
-        response = rag_service.process_query(query)
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{RAG_SERVICE_URL}/chat",
+                json={"query": query}
+            )
         
-        return response
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json().get("detail"))
+            
+        return response.json()
         
-    except HTTPException:
-        raise
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Chatbot service is unavailable.")
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Route alias to match frontend path
 @app.post("/api/chat")
 async def api_chat(request: dict):
     return await chat_with_bot(request)
 
-# Streaming chat endpoint
+
 @app.post("/chat/stream")
 async def chat_with_bot_stream(request: dict):
-    """Streaming chat endpoint for real-time responses."""
-    from fastapi.responses import StreamingResponse
-    import json
-    
+    """
+    Streaming chat endpoint. Forwards to the RAG service stream.
+    """
     try:
         query = request.get("query", "").strip()
-        
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
-        
-        def generate_stream():
+
+        async def stream_forwarder():
             try:
-                for chunk in rag_service.process_query_stream(query):
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
-                yield f"data: {json.dumps({'done': True})}\n\n"
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    async with client.stream(
+                        "POST",
+                        f"{RAG_SERVICE_URL}/chat/stream",
+                        json={"query": query}
+                    ) as response:
+                        if response.status_code != 200:
+                             # Yield a single error chunk
+                             error_detail = response.json().get("detail", "Unknown error from RAG service")
+                             yield f"data: {json.dumps({'error': error_detail})}\n\n"
+                        else:
+                            async for chunk in response.aiter_bytes():
+                                yield chunk
+            except httpx.ConnectError:
+                yield f"data: {json.dumps({'error': 'Chatbot service is unavailable.'})}\n\n"
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return EventSourceResponse(stream_forwarder())
         
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/plain",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
-        )
-        
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error in streaming chat endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
@@ -665,6 +681,7 @@ async def chat_with_bot_stream(request: dict):
 # Route alias to match frontend path
 @app.post("/api/chat/stream")
 async def api_chat_stream(request: dict):
+    return await chat_with_bot_stream(request)
     return await chat_with_bot_stream(request)
 
 @app.get("/api/companies")

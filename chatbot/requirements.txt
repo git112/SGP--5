@@ -1,0 +1,33 @@
+# --- Web Server & API ---
+fastapi
+uvicorn
+python-multipart
+sse-starlette
+httpx
+
+# --- Authentication & Security ---
+python-dotenv
+pymongo
+PyJWT
+passlib[bcrypt]
+email-validator
+google-auth
+google-auth-oauthlib
+google-api-python-client
+
+# --- Core RAG & AI Libraries (OLLAMA-ONLY) ---
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+langchain-ollama
+
+# The local vector database
+chromadb
+
+# --- Document Processing & Data Handling ---
+pandas
+openpyxl
+pypdf
+python-docx
+unstructured
