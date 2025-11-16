@@ -6,8 +6,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
  
 import requests as http_requests
+
+# Load environment variables
+load_dotenv()
 
 class AuthService:
     def __init__(self):
@@ -98,3 +102,59 @@ class AuthService:
             return None
         except jwt.InvalidTokenError:
             return None
+
+    def send_plain_email(self, to_email: str, subject: str, body_text: str) -> bool:
+        try:
+            if not all([self.smtp_username, self.smtp_password]):
+                print("SMTP credentials not configured")
+                return False
+            msg = MIMEMultipart()
+            msg['From'] = self.smtp_username
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body_text, 'plain'))
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            server.starttls()
+            server.login(self.smtp_username, self.smtp_password)
+            server.send_message(msg)
+            server.quit()
+            return True
+        except Exception as e:
+            print(f"Failed to send email to {to_email}: {e}")
+            return False
+
+    def send_bulk_email(self, recipients: list[str], subject: str, body_text: str) -> dict:
+        """Send one email to many recipients using a single SMTP connection.
+        Puts recipients in BCC to preserve privacy.
+        Returns a summary dict with counts and any error.
+        """
+        summary = {"sent": 0, "failed": [], "error": None}
+        try:
+            if not all([self.smtp_username, self.smtp_password]):
+                summary["error"] = "SMTP credentials not configured"
+                return summary
+
+            # Build message once
+            msg = MIMEMultipart()
+            msg['From'] = self.smtp_username
+            msg['To'] = 'Undisclosed recipients'
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body_text, 'plain'))
+
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            server.starttls()
+            server.login(self.smtp_username, self.smtp_password)
+
+            # Use sendmail so we can pass BCC list explicitly
+            server.sendmail(self.smtp_username, recipients, msg.as_string())
+            summary["sent"] = len(recipients)
+            server.quit()
+            return summary
+        except Exception as e:
+            try:
+                server.quit()
+            except Exception:
+                pass
+            summary["error"] = str(e)
+            print(f"Failed to send bulk email: {e}")
+            return summary

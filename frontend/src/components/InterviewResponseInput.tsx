@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Trash2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Trash2, AlertCircle, Loader2, CheckCircle, XCircle } from 'lucide-react'; // Added missing icons
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 
 interface InterviewResponseInputProps {
@@ -16,15 +16,17 @@ interface InterviewResponseInputProps {
 
 export const InterviewResponseInput: React.FC<InterviewResponseInputProps> = ({
   value = '',
-  onChange,
+  onChange = () => {}, // Provide a default empty function
   placeholder = "Type your answer here... (minimum 10 characters)",
   minLength = 10,
   className = '',
   disabled = false,
 }) => {
-  const [localValue, setLocalValue] = useState(value);
-  const lastSpeechRef = React.useRef('');
   
+  // --- FIX: REMOVED localValue and lastSpeechRef ---
+  // const [localValue, setLocalValue] = useState(value); // REMOVED
+  // const lastSpeechRef = React.useRef(''); // REMOVED
+
   const {
     text: speechText,
     isListening,
@@ -33,62 +35,60 @@ export const InterviewResponseInput: React.FC<InterviewResponseInputProps> = ({
     startListening,
     stopListening,
     resetText,
+    setText: setHookText, // We need the hook's setter
   } = useSpeechRecognition();
 
-  // Update local value when speech text changes
-  React.useEffect(() => {
-    if (!speechText) return;
-
-    // Append only the new delta since last onresult
-    const previous = lastSpeechRef.current;
-    const delta = speechText.startsWith(previous)
-      ? speechText.slice(previous.length)
-      : speechText; // fallback if pointers desync
-
-    if (!delta) return;
-
-    setLocalValue((prev) => {
-      const newValue = prev + delta;
-      onChange?.(newValue);
-      return newValue;
-    });
-
-    // advance the pointer to current cumulative speechText
-    lastSpeechRef.current = speechText;
-  }, [speechText, onChange]);
-
-  // Update local value when prop value changes
-  React.useEffect(() => {
-    if (value !== localValue) {
-      setLocalValue(value);
+  // --- FIX #1: Sync from Parent Prop -> Hook ---
+  // When the parent 'value' prop changes (e.g., user clicks "Next" or "Previous"),
+  // we must update the hook's internal text state.
+  useEffect(() => {
+    // Only update if the parent's value is different and we're not listening
+    // This prevents speech from being overwritten by a stale prop
+    if (value !== speechText && !isListening) {
+      setHookText(value);
     }
-  }, [value, localValue]);
+  }, [value, speechText, isListening, setHookText]);
 
+  // --- FIX #2: Sync from Hook -> Parent Prop ---
+  // When the hook provides new speech text, call the parent's `onChange`.
+  // The hook's 'speechText' is ALREADY cumulative and correct.
+  useEffect(() => {
+    // Only send updates *while listening* to prevent stale updates
+    if (isListening) {
+      onChange(speechText);
+    }
+  }, [speechText, isListening, onChange]);
+
+  // --- FIX #3: Handle Manual Typing ---
+  // When the user types, update the parent AND the hook.
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange?.(newValue);
+    onChange(newValue); // Update parent
+    setHookText(newValue); // Keep hook in sync
   };
 
+  // --- FIX #4: Handle Mic Toggle ---
+  // Tell the hook what text to start with.
   const handleMicToggle = () => {
     if (isListening) {
       stopListening();
     } else {
-      // reset speech buffers so we don't duplicate previously captured text
-      lastSpeechRef.current = '';
-      resetText();
+      // INSTEAD of resetText(), tell the hook what text we already have.
+      setHookText(value); 
       startListening();
     }
   };
 
+  // --- FIX #5: Handle Clear ---
+  // Clear both the parent's state (via onChange) and the hook's state.
   const handleClear = () => {
-    setLocalValue('');
+    stopListening(); // Stop any active recording
+    onChange('');
     resetText();
-    lastSpeechRef.current = '';
-    onChange?.('');
   };
 
-  const isValid = localValue.length >= minLength;
+  // Use 'value' prop directly. The component is now controlled.
+  const isValid = value.length >= minLength;
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -115,14 +115,14 @@ export const InterviewResponseInput: React.FC<InterviewResponseInputProps> = ({
         {/* Textarea */}
         <div className="relative">
           <Textarea
-            value={localValue}
+            value={value} // Use 'value' prop directly
             onChange={handleInputChange}
             placeholder={placeholder}
             className={`min-h-[120px] resize-none ${
-              isListening ? 'ring-2 ring-blue-500/50 bg-blue-50/50 pr-20' : 'pr-4'
+              isListening ? 'ring-2 ring-blue-500/50 bg-blue-900/10 pr-20' : 'pr-4' // Dark mode listening bg
             } ${
-              !isValid && localValue.length > 0 ? 'border-orange-500/50' : ''
-            }`}
+              !isValid && value.length > 0 ? 'border-orange-500/50' : ''
+            } bg-slate-700/50 border-slate-600/50 text-white placeholder-slate-400`} // Added dark mode styles
             disabled={disabled}
           />
           
@@ -130,11 +130,11 @@ export const InterviewResponseInput: React.FC<InterviewResponseInputProps> = ({
           {isListening && (
             <div className="absolute top-3 right-3 flex items-center gap-2 bg-blue-500/10 px-2 py-1 rounded-full border border-blue-500/20">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
-              <span className="text-xs text-blue-600 font-medium ml-1">Listening</span>
+              <span className="text-xs text-blue-400 font-medium ml-1">Listening</span>
             </div>
           )}
         </div>
@@ -151,19 +151,19 @@ export const InterviewResponseInput: React.FC<InterviewResponseInputProps> = ({
               disabled={!hasRecognitionSupport || disabled}
               className={`flex items-center gap-2 ${
                 isListening 
-                  ? 'bg-red-500 hover:bg-red-600 text-white' 
-                  : 'hover:bg-blue-50'
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white'
               }`}
             >
               {isListening ? (
                 <>
-                  <MicOff className="w-4 h-4" />
-                  Stop Recording
+                  <Loader2 className="w-4 h-4 animate-spin" /> {/* Added Loader */}
+                  Stop
                 </>
               ) : (
                 <>
                   <Mic className="w-4 h-4" />
-                  Start Recording
+                  Record
                 </>
               )}
             </Button>
@@ -174,37 +174,38 @@ export const InterviewResponseInput: React.FC<InterviewResponseInputProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              disabled={disabled || localValue.length === 0}
-              className="text-gray-500 hover:text-red-600 hover:bg-red-50"
+              disabled={disabled || value.length === 0}
+              className="text-gray-500 hover:text-red-500 hover:bg-red-500/10"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear
             </Button>
           </div>
 
           {/* Character Count and Validation */}
           <div className="flex items-center gap-3">
-            {!isValid && localValue.length > 0 && (
-              <Badge variant="outline" className="border-orange-500 text-orange-600">
-                {minLength - localValue.length} more characters needed
+            {!isValid && value.length > 0 && (
+              <Badge variant="outline" className="border-orange-500/50 text-orange-400">
+                {minLength - value.length} more needed
               </Badge>
             )}
             {isValid && (
-              <Badge variant="outline" className="border-green-500 text-green-600">
-                ✓ Valid response
+              <Badge variant="outline" className="border-green-500/50 text-green-400">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Valid
               </Badge>
             )}
-            <span className="text-sm text-gray-500">
-              {localValue.length}/{minLength}
+            <span className="text-sm text-gray-400">
+              {value.length}/{minLength}
             </span>
           </div>
         </div>
 
         {/* Instructions */}
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>• Click "Start Recording" to use voice-to-text</p>
-          <p>• Speak clearly and pause between sentences</p>
-          <p>• Click "Stop Recording" when finished</p>
-          <p>• You can also type directly in the text area</p>
+        <div className="text-xs text-gray-500 space-y-1 pt-2">
+          <p>• Click "Record" to use voice-to-text.</p>
+          <p>• Click "Stop" when finished.</p>
+          <p>• You can also type directly in the text area.</p>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ export const Header = () => {
         { name: "Home", path: "/" },
         { name: "Insights", path: "/insights" },
         { name: "Companies", path: "/companies" },
+        { name: "Announcements", path: "/announcements" },
         { name: "Interview", path: "/interview" },
         { name: "Resume Builder", path: "/resume-builder" },
         { name: "Resume Analyzer", path: "/resume-analyzer" },

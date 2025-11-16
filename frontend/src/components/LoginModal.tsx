@@ -574,13 +574,7 @@ export const LoginModal = ({ open, onClose }: LoginModalProps) => {
                   >
                     Admin
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('student')}
-                    className={`px-4 py-2 rounded-lg border ${selectedRole==='student' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300' : 'border-slate-700/50 text-slate-300 hover:border-slate-600'}`}
-                  >
-                    Student
-                  </button>
+                  
                 </div>
                 {selectedRole === 'admin' && (
                   <p className="text-xs text-amber-300">Admin email must be adminname.it@charusat.ac.in</p>

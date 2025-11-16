@@ -1,3 +1,8 @@
+import httpx
+from sse_starlette.sse import EventSourceResponse 
+import json 
+RAG_SERVICE_URL = "http://localhost:8001"
+
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -12,6 +17,8 @@ from signup.utils import (
 from signup.database import get_user_collection
 from signup.auth_service import AuthService
 from signup.otp_service import OTPService
+from signup.database import db
+from bson.objectid import ObjectId
 import os
 from dotenv import load_dotenv
 from typing import Optional
@@ -25,7 +32,7 @@ from sheets_service import sheets_service
 from companies_sheets_service import CompaniesSheetsService
 from interview_api import router as interview_router
 from interview_api import resume_router
-from rag_service import rag_service
+
 
 app = FastAPI()
 
@@ -604,58 +611,69 @@ async def debug_values(range: str):
 # Chatbot RAG endpoint
 @app.post("/chat")
 async def chat_with_bot(request: dict):
-    """Chat endpoint for the RAG-based placement chatbot."""
+    """
+    Chat endpoint. Forwards the query to the separate RAG service.
+    """
     try:
         query = request.get("query", "").strip()
-        
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
-        # Process the query using the new RAG service
-        response = rag_service.process_query(query)
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{RAG_SERVICE_URL}/chat",
+                json={"query": query}
+            )
         
-        return response
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json().get("detail"))
+            
+        return response.json()
         
-    except HTTPException:
-        raise
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Chatbot service is unavailable.")
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Route alias to match frontend path
 @app.post("/api/chat")
 async def api_chat(request: dict):
     return await chat_with_bot(request)
 
-# Streaming chat endpoint
+
 @app.post("/chat/stream")
 async def chat_with_bot_stream(request: dict):
-    """Streaming chat endpoint for real-time responses."""
-    from fastapi.responses import StreamingResponse
-    import json
-    
+    """
+    Streaming chat endpoint. Forwards to the RAG service stream.
+    """
     try:
         query = request.get("query", "").strip()
-        
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
-        
-        def generate_stream():
+
+        async def stream_forwarder():
             try:
-                for chunk in rag_service.process_query_stream(query):
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
-                yield f"data: {json.dumps({'done': True})}\n\n"
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    async with client.stream(
+                        "POST",
+                        f"{RAG_SERVICE_URL}/chat/stream",
+                        json={"query": query}
+                    ) as response:
+                        if response.status_code != 200:
+                             # Yield a single error chunk
+                             error_detail = response.json().get("detail", "Unknown error from RAG service")
+                             yield f"data: {json.dumps({'error': error_detail})}\n\n"
+                        else:
+                            async for chunk in response.aiter_bytes():
+                                yield chunk
+            except httpx.ConnectError:
+                yield f"data: {json.dumps({'error': 'Chatbot service is unavailable.'})}\n\n"
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return EventSourceResponse(stream_forwarder())
         
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/plain",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
-        )
-        
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Error in streaming chat endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while processing your request")
@@ -663,6 +681,7 @@ async def chat_with_bot_stream(request: dict):
 # Route alias to match frontend path
 @app.post("/api/chat/stream")
 async def api_chat_stream(request: dict):
+    return await chat_with_bot_stream(request)
     return await chat_with_bot_stream(request)
 
 @app.get("/api/companies")
@@ -677,6 +696,134 @@ async def get_companies(sheet_number: int = 5):
     except Exception as e:
         logger.error(f"Error in companies endpoint: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching companies data")
+
+# Announcements endpoints
+@app.post("/api/announcements")
+async def create_announcement(payload: dict, current_user: str = Depends(get_current_user)):
+    try:
+        users = db["users"]
+        user_doc = users.find_one({"email": current_user})
+        user_type = user_doc.get("user_type") if user_doc else None
+        if user_type != "faculty":
+            raise HTTPException(status_code=403, detail="Only admin can create announcements")
+
+        required = ["company", "location", "role", "package", "date"]
+        if not all(k in payload and str(payload[k]).strip() for k in required):
+            raise HTTPException(status_code=400, detail="Missing required fields")
+
+        announcement = {
+            "company": payload.get("company"),
+            "location": payload.get("location"),
+            "role": payload.get("role"),
+            "package": payload.get("package"),
+            "date": payload.get("date"),
+            "instructions": payload.get("instructions", ""),
+            "created_at": datetime.utcnow(),
+        }
+        result = db["announcements"].insert_one(announcement)
+        announcement["_id"] = str(result.inserted_id)
+        return announcement
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating announcement: {str(e)}")
+
+@app.get("/api/announcements")
+async def list_announcements(sort: str = "newest"):
+    try:
+        sort_key = ("created_at", -1) if sort == "newest" else ("created_at", 1)
+        docs = list(db["announcements"].find({}).sort([sort_key]))
+        for d in docs:
+            d["_id"] = str(d["_id"])
+        return docs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching announcements: {str(e)}")
+
+@app.post("/api/announcements/send-email")
+async def send_announcement_email(payload: dict, current_user: str = Depends(get_current_user)):
+    try:
+        users = db["users"]
+        user_doc = users.find_one({"email": current_user})
+        user_type = user_doc.get("user_type") if user_doc else None
+        if user_type != "faculty":
+            raise HTTPException(status_code=403, detail="Only admin can send emails")
+
+        import re
+        emails = payload.get("emails", [])
+        if isinstance(emails, str):
+            # split on commas, semicolons, whitespace or newlines
+            emails = re.split(r"[\s,;]+", emails)
+        # normalize and validate
+        emails = [e.strip() for e in emails if e and isinstance(e, str)]
+        email_re = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+        invalid = [e for e in emails if not email_re.match(e)]
+        emails = [e for e in emails if email_re.match(e)]
+        if not emails:
+            raise HTTPException(status_code=400, detail=f"No valid recipient emails provided. Invalid: {invalid[:5]}")
+
+        company = payload.get("company", "")
+        location = payload.get("location", "")
+        role = payload.get("role", "")
+        package = payload.get("package", "")
+        date = payload.get("date", "")
+
+        subject = f"\ud83d\udce3 Upcoming Company Announcement \u2013 {company}" if company else "\ud83d\udce3 Upcoming Company Announcement"
+        body = (
+            "Dear Student,\n\n"
+            "Please note the details of the upcoming placement drive:\n\n"
+            f"Company: {company}\n"
+            f"Location: {location}\n"
+            f"Role: {role}\n"
+            f"CTC: {package}\n"
+            f"Date: {date}\n\n"
+            "Please be prepared accordingly.\n\n"
+            "Regards,\nPlacement Cell"
+        )
+
+        # Use bulk send via BCC for reliability and speed
+        bulk_result = auth_service.send_bulk_email(emails, subject, body)
+        return {"sent": bulk_result.get("sent", 0), "failed": bulk_result.get("failed", []), "invalid": invalid, "error": bulk_result.get("error")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sending announcement email: {str(e)}")
+
+@app.delete("/api/announcements/{announcement_id}")
+async def delete_announcement(announcement_id: str, current_user: str = Depends(get_current_user)):
+    try:
+        users = db["users"]
+        user_doc = users.find_one({"email": current_user})
+        user_type = user_doc.get("user_type") if user_doc else None
+        if user_type != "faculty":
+            raise HTTPException(status_code=403, detail="Only admin can delete announcements")
+
+        try:
+            _id = ObjectId(announcement_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid announcement id")
+
+        res = db["announcements"].delete_one({"_id": _id})
+        if res.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Announcement not found")
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting announcement: {str(e)}")
+
+# Test email endpoint
+@app.post("/api/test-email")
+async def test_email(payload: dict):
+    try:
+        test_email = payload.get("email", "test@example.com")
+        result = auth_service.send_plain_email(
+            test_email, 
+            "📣 Test Email from PlaceMentor AI", 
+            "This is a test email to verify email functionality is working correctly.\n\nRegards,\nPlaceMentor AI Team"
+        )
+        return {"success": result, "message": "Test email sent" if result else "Failed to send test email"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error sending test email: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
