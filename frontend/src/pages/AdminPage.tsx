@@ -22,12 +22,15 @@ const AdminPage: React.FC = () => {
     date: ''
   });
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [sheetTarget, setSheetTarget] = useState<'insights'|'companies'|'interview'|'chatbot'|null>(null);
+  const [sheetTarget, setSheetTarget] = useState<'insights' | 'companies' | 'interview' | 'chatbot' | null>(null);
   const [insightsType, setInsightsType] = useState<string>('');
   const [interviewType, setInterviewType] = useState<string>('');
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailRecipients, setEmailRecipients] = useState('');
   const [currentAnnouncement, setCurrentAnnouncement] = useState<any>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [year, setYear] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const { token } = useAuth();
 
@@ -68,7 +71,7 @@ const AdminPage: React.FC = () => {
     try {
       if (!token) { toast.error('Please login again'); return; }
       if (!currentAnnouncement) return;
-      
+
       const emails = emailRecipients
         .split(/[,;\s]+/)
         .map(s => s.trim())
@@ -80,7 +83,7 @@ const AdminPage: React.FC = () => {
       const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
       const invalid = emails.filter(e => !emailRegex.test(e));
       if (invalid.length) {
-        toast.error(`Invalid emails: ${invalid.slice(0,3).join(', ')}`);
+        toast.error(`Invalid emails: ${invalid.slice(0, 3).join(', ')}`);
         return;
       }
 
@@ -93,7 +96,7 @@ const AdminPage: React.FC = () => {
         instructions: currentAnnouncement.jobDescription,
         emails,
       }, token);
-      
+
       toast.success(`Emails sent: ${res.sent}, failed: ${res.failed?.length || 0}`);
       setEmailDialogOpen(false);
       setEmailRecipients('');
@@ -101,10 +104,127 @@ const AdminPage: React.FC = () => {
     } catch (e: any) {
       toast.error(e.message || 'Failed to send emails');
     }
+  }
+
+
+  const handleUpload = async () => {
+    if (!file || !sheetTarget) {
+      toast.error('Please select a target and upload a file');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', sheetTarget);
+    if (year) formData.append('year', year);
+
+    setIsUploading(true);
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const res = await fetch(`${backendUrl}/api/admin/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+      toast.success(data.message);
+      setFile(null);
+      setYear('');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { duration: 0.6 } } };
   const cardVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 }, hover: { y: -6, scale: 1.01 } };
+
+  const templates = {
+    insights: {
+      cgpa: {
+        title: "CGPA vs Offers Template",
+        headers: ["Year", "CGPA", "Offers"],
+        rows: [
+          ["2020", "9.29", "1"],
+          ["2020", "7.6", "1"]
+        ]
+      },
+      salary: {
+        title: "Salary Growth Template",
+        headers: ["Year", "Average Package", "Highest Package", "Lowest Package"],
+        rows: [
+          ["2020", "3.83", "7", "2.4"],
+          ["2021", "4.28", "14.5", "1.2"]
+        ]
+      },
+      "top-companies": {
+        title: "Top Companies Template",
+        headers: ["Company", "Total Offers", "Years"],
+        rows: [
+          ["ACE INFOWAY", "0", "2023, 2024"],
+          ["Alian Software", "3", "2024, 2025"]
+        ]
+      },
+      overview: {
+        title: "Roles/Overview Template",
+        headers: ["Year", "Role", "Count"],
+        rows: [
+          ["2020", "Software Engineer", "34"],
+          ["2020", "Analyst", "1"]
+        ]
+      }
+    },
+    companies: {
+      title: "Companies Directory Template",
+      headers: ["Company", "Location", "Avg. Package", "Roles"],
+      rows: [
+        ["Agami Tech", "Surat", "1", "Software Engineer"],
+        ["Amazon", "Seattle", "14.5", "Software Engineer"]
+      ]
+    }
+  };
+
+  const renderTemplate = () => {
+    let template = null;
+    if (sheetTarget === 'companies') {
+      template = templates.companies;
+    } else if (sheetTarget === 'insights' && insightsType) {
+      template = templates.insights[insightsType as keyof typeof templates.insights];
+    }
+
+    if (!template) return null;
+
+    return (
+      <div className="mt-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="text-sm font-medium text-cyan-200">{template.title}</h4>
+          <span className="text-xs text-slate-400">Expected CSV/Excel Format</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left text-slate-300">
+            <thead className="text-xs text-slate-400 uppercase bg-slate-800/50">
+              <tr>
+                {template.headers.map((h, i) => <th key={i} className="px-3 py-2 border-b border-slate-700">{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {template.rows.map((row, i) => (
+                <tr key={i} className="border-b border-slate-700/50 last:border-0">
+                  {row.map((cell, j) => <td key={j} className="px-3 py-2">{cell}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <motion.div className="relative min-h-screen text-foreground overflow-x-hidden" variants={containerVariants} initial="hidden" animate="visible">
@@ -133,31 +253,27 @@ const AdminPage: React.FC = () => {
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <Label className="text-cyan-100">Company Name</Label>
-                    <Input value={announcement.company} onChange={(e)=>setAnnouncement({...announcement, company:e.target.value})} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
+                    <Input value={announcement.company} onChange={(e) => setAnnouncement({ ...announcement, company: e.target.value })} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-cyan-100">Location</Label>
-                      <Input value={announcement.location} onChange={(e)=>setAnnouncement({...announcement, location:e.target.value})} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
+                      <Input value={announcement.location} onChange={(e) => setAnnouncement({ ...announcement, location: e.target.value })} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
                     </div>
                     <div>
                       <Label className="text-cyan-100">Package Offers</Label>
-                      <Input value={announcement.packageOffers} onChange={(e)=>setAnnouncement({...announcement, packageOffers:e.target.value})} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
+                      <Input value={announcement.packageOffers} onChange={(e) => setAnnouncement({ ...announcement, packageOffers: e.target.value })} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
                     </div>
                   </div>
                   <div>
                     <Label className="text-cyan-100">Job Description</Label>
                     <textarea
                       value={announcement.jobDescription}
-                      onChange={(e)=>setAnnouncement({...announcement, jobDescription:e.target.value})}
+                      onChange={(e) => setAnnouncement({ ...announcement, jobDescription: e.target.value })}
                       rows={8}
                       placeholder="Write a concise description, responsibilities, eligibility, important dates, and application link."
                       className="w-full rounded-md bg-white/5 border border-cyan-500/20 text-cyan-100 p-3 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60 placeholder:text-cyan-200/40"
                     />
-                  </div>
-                  <div>
-                    <Label className="text-cyan-100">Date</Label>
-                    <Input type="date" value={announcement.date} onChange={(e)=>setAnnouncement({...announcement, date:e.target.value})} className="bg-white/5 border-cyan-500/20 text-cyan-100" />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -184,7 +300,7 @@ const AdminPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-3 mt-4">
-                  {announcements.map((a, idx)=> (
+                  {announcements.map((a, idx) => (
                     <div key={idx} className="relative p-4 rounded-xl border border-cyan-500/10 bg-white/5 hover:bg-white/10 transition-colors">
                       <button
                         aria-label="Discard draft announcement"
@@ -197,9 +313,9 @@ const AdminPage: React.FC = () => {
                       <div className="text-cyan-200/80 text-sm">{a.location} • {a.date}</div>
                       <div className="text-cyan-100 mt-2">Package: {a.packageOffers}</div>
                       <div className="text-cyan-100 mt-1">{a.jobDescription}</div>
-                    <div className="mt-3 flex gap-2">
-                        <Button size="sm" onClick={()=>sendToBoard(a)} className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send to Board</Button>
-                        <Button size="sm" variant="secondary" onClick={()=>openEmailDialog(a)} className="bg-slate-700/80 text-cyan-100 hover:bg-slate-600/80 active:bg-slate-600 border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send via Email</Button>
+                      <div className="mt-3 flex gap-2">
+                        <Button size="sm" onClick={() => sendToBoard(a)} className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send to Board</Button>
+                        <Button size="sm" variant="secondary" onClick={() => openEmailDialog(a)} className="bg-slate-700/80 text-cyan-100 hover:bg-slate-600/80 active:bg-slate-600 border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Send via Email</Button>
                       </div>
                     </div>
                   ))}
@@ -217,32 +333,32 @@ const AdminPage: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-3">
                   <Button
-                    onClick={()=>{setSheetTarget('insights')}}
-                    className={`${sheetTarget==='insights' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
+                    onClick={() => { setSheetTarget('insights') }}
+                    className={`${sheetTarget === 'insights' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
                   >
                     Insights Page
                   </Button>
                   <Button
-                    onClick={()=>{setSheetTarget('companies')}}
-                    className={`${sheetTarget==='companies' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
+                    onClick={() => { setSheetTarget('companies') }}
+                    className={`${sheetTarget === 'companies' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
                   >
                     Companies Page
                   </Button>
                   <Button
-                    onClick={()=>{setSheetTarget('interview')}}
-                    className={`${sheetTarget==='interview' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
+                    onClick={() => { setSheetTarget('interview') }}
+                    className={`${sheetTarget === 'interview' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
                   >
                     Interview Page
                   </Button>
                   <Button
-                    onClick={()=>{setSheetTarget('chatbot')}}
-                    className={`${sheetTarget==='chatbot' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
+                    onClick={() => { setSheetTarget('chatbot') }}
+                    className={`${sheetTarget === 'chatbot' ? 'bg-cyan-600' : 'bg-slate-700/70'} hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60`}
                   >
                     Chatbot
                   </Button>
                 </div>
 
-                {sheetTarget==='insights' && (
+                {sheetTarget === 'insights' && (
                   <div className="space-y-2">
                     <Label className="text-cyan-100">Insights Section</Label>
                     <Select onValueChange={setInsightsType}>
@@ -257,7 +373,7 @@ const AdminPage: React.FC = () => {
                   </div>
                 )}
 
-                {sheetTarget==='interview' && (
+                {sheetTarget === 'interview' && (
                   <div className="space-y-2">
                     <Label className="text-cyan-100">Interview Section</Label>
                     <Select onValueChange={setInterviewType}>
@@ -270,17 +386,41 @@ const AdminPage: React.FC = () => {
                   </div>
                 )}
 
+                {(sheetTarget === 'insights' || sheetTarget === 'companies' || sheetTarget === 'interview') && (
+                  <div>
+                    <Label className="text-cyan-100">Year (Optional)</Label>
+                    <Input
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      placeholder="e.g. 2025"
+                      className="bg-white/5 border-cyan-500/20 text-cyan-100"
+                    />
+                  </div>
+                )}
+
+                {renderTemplate()}
+
                 <div>
                   <Label className="text-cyan-100">Upload File</Label>
-                  <Input type="file" className="bg-white/5 border-cyan-500/20 text-cyan-100" />
+                  <Input
+                    type="file"
+                    onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                    className="bg-white/5 border-cyan-500/20 text-cyan-100"
+                  />
                 </div>
-                <Button className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60">Upload</Button>
+                <Button
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white border border-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-400/60"
+                >
+                  {isUploading ? 'Uploading...' : 'Upload'}
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
         </div>
       </div>
-      
+
       {/* Email Dialog */}
       <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
         <DialogContent className="bg-slate-800 border-slate-700 text-cyan-100">
@@ -299,7 +439,7 @@ const AdminPage: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             <div>
               <Label className="text-cyan-100">Recipient Email Addresses</Label>
               <Textarea
@@ -313,7 +453,7 @@ const AdminPage: React.FC = () => {
                 You can enter multiple email addresses separated by commas, or upload a CSV file with email addresses.
               </p>
             </div>
-            
+
             <div className="flex gap-3">
               <Button
                 onClick={sendMail}
@@ -332,7 +472,7 @@ const AdminPage: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <Footer />
     </motion.div>
   );

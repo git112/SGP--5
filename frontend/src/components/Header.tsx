@@ -61,12 +61,12 @@ export const Header = () => {
                             <span className="text-white transition-colors duration-300 group-hover:text-slate-200">Mentor AI</span>
                         </Link>
                     </motion.div>
-                    
+
                     {/* Right side of header */}
                     {isLoggedIn ? (
                         <>
                             {/* Desktop Navigation */}
-                            <nav className="hidden lg:flex items-center space-x-2">
+                            <nav className="hidden lg:flex items-center space-x-4">
                                 {navItems.map((item, index) => (
                                     <motion.div
                                         key={item.name}
@@ -79,12 +79,10 @@ export const Header = () => {
                                         <Link to={item.path}>
                                             <Button
                                                 variant="ghost"
-                                                // FONT SIZE INCREASED: text-sm -> text-base
-                                                className={`relative px-4 py-2 text-base font-medium transition-all duration-300 rounded-lg ${
-                                                    location.pathname === item.path
-                                                        ? 'text-cyan-400 bg-cyan-400/10 shadow-lg'
-                                                        : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50'
-                                                }`}
+                                                className={`relative px-3 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${location.pathname === item.path
+                                                    ? 'text-cyan-400'
+                                                    : 'text-slate-300 hover:text-cyan-400'
+                                                    }`}
                                             >
                                                 <span className="relative z-10">{item.name}</span>
                                             </Button>
@@ -93,13 +91,13 @@ export const Header = () => {
                                 ))}
 
                                 {user?.user_type === 'faculty' && (
-                                  <motion.div variants={navItemVariants} initial="hidden" animate="visible" whileHover="hover">
-                                    <Link to="/admin">
-                                      <Button variant="secondary" className="px-4 py-2 text-base font-medium bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg">
-                                        Admin Panel
-                                      </Button>
-                                    </Link>
-                                  </motion.div>
+                                    <motion.div variants={navItemVariants} initial="hidden" animate="visible" whileHover="hover">
+                                        <Link to="/admin">
+                                            <Button variant="secondary" className="px-4 py-2 text-base font-medium bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg">
+                                                Admin Panel
+                                            </Button>
+                                        </Link>
+                                    </motion.div>
                                 )}
                             </nav>
 
@@ -196,11 +194,10 @@ export const Header = () => {
                                                 <Button
                                                     variant="ghost"
                                                     // FONT SIZE INCREASED: text-sm -> text-base
-                                                    className={`w-full justify-start px-4 py-3 text-base font-medium transition-all duration-300 rounded-lg ${
-                                                        location.pathname === item.path
-                                                            ? 'text-cyan-400 bg-cyan-400/10'
-                                                            : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50'
-                                                    }`}
+                                                    className={`w-full justify-start px-4 py-3 text-base font-medium transition-all duration-300 rounded-lg ${location.pathname === item.path
+                                                        ? 'text-cyan-400 bg-cyan-400/10'
+                                                        : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800/50'
+                                                        }`}
                                                 >
                                                     {item.name}
                                                 </Button>

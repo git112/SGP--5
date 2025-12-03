@@ -53,6 +53,16 @@ async def chat_with_bot_stream(request: QueryRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/reload")
+async def reload_knowledge_base():
+    if not rag_service:
+        raise HTTPException(status_code=500, detail="RAG Service not initialized")
+    try:
+        result = rag_service.reload_knowledge_base()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     # We will run this on port 8001 to keep it separate
