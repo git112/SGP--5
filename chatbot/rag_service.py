@@ -939,6 +939,46 @@ Answer:
             yield "I apologize, but I encountered an error. Please try again."
 
 
+    def reload_knowledge_base(self):
+        """Reloads the knowledge base by re-processing all documents in the data folder."""
+        try:
+            logger.info("Reloading knowledge base...")
+            
+            # Re-process documents
+            documents = self._load_and_process_documents()
+            
+            if not documents:
+                logger.warning("No documents found during reload.")
+                return {"status": "warning", "message": "No documents found to index."}
+
+            # Try to clear existing collection if possible
+            if self.vector_store:
+                try:
+                    if hasattr(self.vector_store, "delete_collection"):
+                        self.vector_store.delete_collection()
+                    elif hasattr(self.vector_store, "_collection"):
+                         self.vector_store._collection.delete()
+                    logger.info("Deleted existing collection data.")
+                except Exception as e:
+                    logger.warning(f"Could not delete collection data: {e}")
+            
+            # Re-create / Update
+            try:
+                self.vector_store = Chroma.from_documents(documents=documents, embedding=self.embeddings, persist_directory=self.vector_db_path)
+            except Exception:
+                 self.vector_store = Chroma.from_documents(documents=documents, embedding_function=self.embeddings, persist_directory=self.vector_db_path)
+            
+            # Re-setup chain
+            self._setup_conversational_chain()
+            
+            logger.info("Knowledge base reloaded successfully.")
+            return {"status": "success", "message": f"Reloaded with {len(documents)} documents."}
+            
+        except Exception as e:
+            logger.error(f"Error reloading knowledge base: {e}", exc_info=True)
+            return {"status": "error", "message": str(e)}
+
+
 # Global instance
 try:
     rag_service = PlacementorRAGService()

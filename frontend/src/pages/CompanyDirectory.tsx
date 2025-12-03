@@ -136,11 +136,11 @@ export default function CompanyDirectory() {
         <div className="absolute bottom-20 right-20 w-2 h-2 bg-[#14788f]/45 rounded-full animate-ping shadow-lg shadow-[#14788f]/20" style={{ animationDelay: '3s' }}></div>
       </div>
       <section className="pt-24 pb-12 relative z-10 flex-1">
-        <div className="container mx-auto px-4 max-w-6xl">
+        <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-gradient-primary">Company Directory</h1>
-            <p className="text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light">Explore companies, packages, and placement opportunities</p>
-            
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-2 text-gradient-primary">Company Directory</h1>
+            <p className="text-base sm:text-lg text-[#dee0e1]/80 max-w-2xl mx-auto font-light">Explore companies, packages, and placement opportunities</p>
+
             {/* Refresh Button */}
             {companiesData && (
               <motion.button
@@ -168,23 +168,23 @@ export default function CompanyDirectory() {
             )}
           </div>
           <motion.div
-            className="bg-gradient-to-br from-[#232b47]/80 via-[#1a1f3a]/80 to-[#38bdf8]/10 border border-cyan-400/30 shadow-xl rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-4 mb-12 backdrop-blur-xl"
+            className="bg-gradient-to-br from-[#232b47]/80 via-[#1a1f3a]/80 to-[#38bdf8]/10 border border-cyan-400/30 shadow-xl rounded-2xl p-4 sm:p-6 flex flex-col gap-3 sm:gap-4 mb-12 backdrop-blur-xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex-1 flex items-center gap-3">
-              <span className="text-xl text-cyan-400 drop-shadow-glow"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>
+            <div className="flex-1 flex items-center gap-2 sm:gap-3">
+              <span className="text-xl text-cyan-400 drop-shadow-glow"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
               <input
                 type="text"
                 placeholder="Search companies..."
-                className="w-full max-w-xs px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground placeholder-cyan-300 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20"
+                className="w-full px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground placeholder-cyan-300 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 text-sm sm:text-base"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
             <select
-              className="w-full max-w-xs px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select"
+              className="w-full px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select text-sm sm:text-base"
               value={location}
               onChange={e => setLocation(e.target.value)}
             >
@@ -197,7 +197,7 @@ export default function CompanyDirectory() {
                 ))}
             </select>
             <select
-              className="w-full max-w-xs px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select"
+              className="w-full px-4 py-3 bg-white/10 border border-cyan-400/30 rounded-xl text-foreground focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 shadow-md transition-all duration-300 backdrop-blur-md focus:shadow-cyan-400/20 custom-select text-sm sm:text-base"
               value={pkg}
               onChange={e => setPkg(e.target.value)}
             >
@@ -259,7 +259,7 @@ export default function CompanyDirectory() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  
+
                 </motion.div>
               )}
 
@@ -285,7 +285,7 @@ export default function CompanyDirectory() {
                     transition={{ duration: 0.5, type: "spring", bounce: 0.18 }}
                     className="h-full"
                   >
-                    <CompanyCard 
+                    <CompanyCard
                       icon={<span role="img" aria-label={c.name}>{c.icon}</span>}
                       name={c.name}
                       domain={c.domain}
@@ -300,8 +300,8 @@ export default function CompanyDirectory() {
                 ))}
                 {sortedByPackageDesc.length === 0 && (
                   <div className="col-span-full text-center text-muted py-12">
-                    {search || location !== "All Locations" || pkg !== "All Packages" 
-                      ? "No companies match your filters." 
+                    {search || location !== "All Locations" || pkg !== "All Packages"
+                      ? "No companies match your filters."
                       : "No companies found in the data."}
                   </div>
                 )}

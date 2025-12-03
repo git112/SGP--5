@@ -181,42 +181,43 @@ export default function Insights() {
       {/* Background */}
       {/* --- NEW Proper & Balanced Background --- */}
 
-{/* 1. Base Gradient: A sophisticated, evenly distributed dark blue and slate gradient */}
-<div 
-  className="absolute inset-0 bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] z-0" 
-/>
+      {/* 1. Base Gradient: A sophisticated, evenly distributed dark blue and slate gradient */}
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] z-0"
+      />
 
-{/* 2. Ambient Glow: A soft, centered radial gradient to gently lift the middle */}
-<div 
-  className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(14,165,233,0.1),_transparent_70%)] z-0" 
-/>
+      {/* 2. Ambient Glow: A soft, centered radial gradient to gently lift the middle */}
+      <div
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(14,165,233,0.1),_transparent_70%)] z-0"
+      />
 
-{/* 3. Subtle Grid Pattern: A clean, uniform texture */}
-<div 
-  className="absolute inset-0 grid-pattern-balanced opacity-10 z-0" 
-/>
+      {/* 3. Subtle Grid Pattern: A clean, uniform texture */}
+      <div
+        className="absolute inset-0 grid-pattern-balanced opacity-10 z-0"
+      />
 
-{/* 4. Floating Orbs: For gentle, ambient motion (optional, but recommended for a dynamic feel) */}
-<motion.div 
-  className="absolute top-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl"
-  animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
-  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-/>
-<motion.div 
-  className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl"
-  animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
-  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 5 }}
-/>
+      {/* 4. Floating Orbs: For gentle, ambient motion (optional, but recommended for a dynamic feel) */}
+      <motion.div
+        className="absolute top-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl"
+        animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl"
+        animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+      />
 
-{/* Add this <style> tag to your component or a global CSS file */}
-<style dangerouslySetInnerHTML={{ __html: `
+      {/* Add this <style> tag to your component or a global CSS file */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
   .grid-pattern-balanced {
     background-image: linear-gradient(rgba(100, 116, 139, 0.4) 1px, transparent 1px), 
                       linear-gradient(90deg, rgba(100, 116, 139, 0.4) 1px, transparent 1px);
     background-size: 3rem 3rem;
   }
 `}} />
-      
+
       {/* Floating orbs */}
       <motion.div className="absolute top-1/4 right-1/4 w-64 h-64 rounded-full bg-[#36b5d3]/10 blur-3xl z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute bottom-1/4 left-1/4 w-48 h-48 rounded-full bg-[#14788f]/10 blur-2xl z-0" animate={{ y: [-10, 10, -10] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
@@ -226,123 +227,123 @@ export default function Insights() {
       <Header />
 
       {/* Hero Section */}
-    <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
-  
-  {/* --- NEW Brighter & More Dynamic Background --- */}
+      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
 
-  {/* 1. Lighter, More Vibrant Gradient */}
-  <motion.div 
-    className="absolute inset-0 bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#334155] z-0"
-  />
-  
-  {/* 2. Subtle Grid Texture (unchanged) */}
-  <div className="absolute inset-0 bg-grid-slate-700/50 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,#000)] opacity-20 z-0"></div>
+        {/* --- NEW Brighter & More Dynamic Background --- */}
 
-  {/* 3. Floating Orbs for soft color (unchanged) */}
-  <motion.div 
-    className="absolute top-1/4 right-1/4 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl"
-    animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
-    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-  />
-  <motion.div 
-    className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"
-    animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
-    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 4 }}
-  />
+        {/* 1. Lighter, More Vibrant Gradient */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#334155] z-0"
+        />
 
-  {/* 4. MORE Blinking Stars for a lively effect */}
-  <motion.div 
-      className="absolute top-[15%] left-[10%] w-[2px] h-[2px] bg-white rounded-full"
-      animate={{ opacity: [0, 1, 0] }}
-      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0 }}
-  />
-  <motion.div 
-      className="absolute top-[30%] right-[15%] w-1 h-1 bg-cyan-200 rounded-full"
-      animate={{ opacity: [0, 0.8, 0], scale: [1, 1.3, 1] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-  />
-  <motion.div 
-      className="absolute bottom-[20%] left-[20%] w-[3px] h-[3px] bg-white rounded-full"
-      animate={{ opacity: [0, 1, 0] }}
-      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1.1 }}
-  />
-  <motion.div 
-      className="absolute top-[55%] left-[40%] w-1 h-1 bg-slate-400 rounded-full"
-      animate={{ opacity: [0, 0.7, 0] }}
-      transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-  />
-  <motion.div 
-      className="absolute top-[40%] left-[70%] w-[2px] h-[2px] bg-cyan-300 rounded-full"
-      animate={{ opacity: [0, 1, 0] }}
-      transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 1.9 }}
-  />
-  <motion.div 
-      className="absolute bottom-[40%] right-[30%] w-1.5 h-1.5 bg-white rounded-full"
-      animate={{ opacity: [0, 1, 0], scale: [1, 1.2, 1] }}
-      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 2.3 }}
-  />
-    <motion.div 
-      className="absolute top-[80%] left-[50%] w-[2px] h-[2px] bg-slate-300 rounded-full"
-      animate={{ opacity: [0, 0.9, 0] }}
-      transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 2.8 }}
-  />
-  <motion.div 
-      className="absolute bottom-[5%] right-[55%] w-1 h-1 bg-cyan-400 rounded-full"
-      animate={{ opacity: [0, 1, 0] }}
-      transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: 3.1 }}
-  />
-  
-  {/* --- Background End --- */}
+        {/* 2. Subtle Grid Texture (unchanged) */}
+        <div className="absolute inset-0 bg-grid-slate-700/50 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,#000)] opacity-20 z-0"></div>
+
+        {/* 3. Floating Orbs for soft color (unchanged) */}
+        <motion.div
+          className="absolute top-1/4 right-1/4 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl"
+          animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 left-1/4 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"
+          animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+        />
+
+        {/* 4. MORE Blinking Stars for a lively effect */}
+        <motion.div
+          className="absolute top-[15%] left-[10%] w-[2px] h-[2px] bg-white rounded-full"
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0 }}
+        />
+        <motion.div
+          className="absolute top-[30%] right-[15%] w-1 h-1 bg-cyan-200 rounded-full"
+          animate={{ opacity: [0, 0.8, 0], scale: [1, 1.3, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        />
+        <motion.div
+          className="absolute bottom-[20%] left-[20%] w-[3px] h-[3px] bg-white rounded-full"
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1.1 }}
+        />
+        <motion.div
+          className="absolute top-[55%] left-[40%] w-1 h-1 bg-slate-400 rounded-full"
+          animate={{ opacity: [0, 0.7, 0] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+        />
+        <motion.div
+          className="absolute top-[40%] left-[70%] w-[2px] h-[2px] bg-cyan-300 rounded-full"
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 1.9 }}
+        />
+        <motion.div
+          className="absolute bottom-[40%] right-[30%] w-1.5 h-1.5 bg-white rounded-full"
+          animate={{ opacity: [0, 1, 0], scale: [1, 1.2, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 2.3 }}
+        />
+        <motion.div
+          className="absolute top-[80%] left-[50%] w-[2px] h-[2px] bg-slate-300 rounded-full"
+          animate={{ opacity: [0, 0.9, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 2.8 }}
+        />
+        <motion.div
+          className="absolute bottom-[5%] right-[55%] w-1 h-1 bg-cyan-400 rounded-full"
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut", delay: 3.1 }}
+        />
+
+        {/* --- Background End --- */}
 
 
-  {/* Main Content (Your original content sits on top) */}
-  <motion.div
-    className="relative z-10 text-center max-w-4xl mx-auto px-6"
-    variants={containerVariants}
-    initial="hidden"
-    animate="visible"
-  >
-    <div className="space-y-8">
-      
-      {/* "Hook" Badge */}
-      <motion.div 
-        className="inline-block px-6 py-3 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm"
-        variants={itemVariants}
-      >
-        <span className="text-sm text-cyan-400 font-semibold tracking-wide">
-          Welcome to Your Insights Dashboard
-        </span>
-      </motion.div>
-      
-      {/* Main Headline */}
-      <motion.div 
-        className="space-y-4"
-        variants={itemVariants}
-      >
-        <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
-          <span className="block bg-gradient-to-r from-white via-slate-200 to-cyan-300 bg-clip-text text-transparent">
-            Placement Clarity,
-          </span>
-          <span className="block text-white mt-2">
-            Delivered.
-          </span>
-        </h1>
-      </motion.div>
-      
-      {/* Subtitle */}
-      <motion.p 
-        className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
-        variants={itemVariants}
-      >
-        Explore data-driven trends, company details, and salary insights to chart your path to success.
-      </motion.p>
-      
-    </div>
-  </motion.div>
-</section>
+        {/* Main Content (Your original content sits on top) */}
+        <motion.div
+          className="relative z-10 text-center max-w-4xl mx-auto px-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="space-y-8">
+
+            {/* "Hook" Badge */}
+            <motion.div
+              className="inline-block px-6 py-3 rounded-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm"
+              variants={itemVariants}
+            >
+              <span className="text-sm text-cyan-400 font-semibold tracking-wide">
+                Welcome to Your Insights Dashboard
+              </span>
+            </motion.div>
+
+            {/* Main Headline */}
+            <motion.div
+              className="space-y-4"
+              variants={itemVariants}
+            >
+              <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
+                <span className="block bg-gradient-to-r from-white via-slate-200 to-cyan-300 bg-clip-text text-transparent">
+                  Placement Clarity,
+                </span>
+                <span className="block text-white mt-2">
+                  Delivered.
+                </span>
+              </h1>
+            </motion.div>
+
+            {/* Subtitle */}
+            <motion.p
+              className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed"
+              variants={itemVariants}
+            >
+              Explore data-driven trends, company details, and salary insights to chart your path to success.
+            </motion.p>
+
+          </div>
+        </motion.div>
+      </section>
 
       {/* Stats Overview */}
-      <section className="py-16 px-6">
+      <section className="py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           {data.stats_overview?.map((stat, index) => (
             <motion.div
@@ -367,26 +368,26 @@ export default function Insights() {
       </section>
 
       {/* CGPA vs Placement Offers */}
-      <section className="py-16 px-6">
+      <section className="py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-  
-  {/* Updated h2 with a white-to-blue gradient */}
-  <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-    Does CGPA Matter?
-  </h2>
-  
-  {/* Updated underline to match the new gradient */}
-  <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
-  
-  {/* Unchanged subtitle */}
-  <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-    Correlation between academic performance and placement success.
-  </p>
-  
-</motion.div>
+
+            {/* Updated h2 with a white-to-blue gradient */}
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+              Does CGPA Matter?
+            </h2>
+
+            {/* Updated underline to match the new gradient */}
+            <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
+
+            {/* Unchanged subtitle */}
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              Correlation between academic performance and placement success.
+            </p>
+
+          </motion.div>
           <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={300} className="sm:h-[400px]">
               <BarChart data={data.cgpa_data} barCategoryGap={24}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="cgpa" stroke="#A5F3FC" tick={{ fontWeight: 600 }} />
@@ -406,11 +407,11 @@ export default function Insights() {
       </section>
 
       {/* Top Hiring Companies - Updated with Year-wise Buttons */}
-       {/* Top Companies Hiring */}
-          <section className="py-16 px-6">
+      {/* Top Companies Hiring */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
               Top Hiring Companies
             </h2>
             <div className="mx-auto w-16 h-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 rounded-full mb-4"></div>
@@ -418,14 +419,14 @@ export default function Insights() {
               Companies with the highest student placement rates.
             </p>
           </motion.div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
               <div className="flex items-center gap-3 mb-6">
                 <Target className="w-6 h-6 text-cyan-400" />
                 <h3 className="text-xl font-semibold text-white">Hiring Distribution</h3>
               </div>
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer width="100%" height={300} className="sm:h-[350px]">
                 <PieChart>
                   <Pie
                     data={data.companies_data}
@@ -434,7 +435,7 @@ export default function Insights() {
                     outerRadius={100}
                     innerRadius={40}
                     dataKey="hires"
-                    label={({ name, percent }: any) => 
+                    label={({ name, percent }: any) =>
                       percent > 0.05 ? `${name}\n${(percent * 100).toFixed(1)}%` : ''
                     }
                     labelLine={false}
@@ -443,18 +444,18 @@ export default function Insights() {
                     animationBegin={300}
                   >
                     {data.companies_data?.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color} 
-                        style={{ 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        style={{
                           filter: `drop-shadow(0 0 12px ${entry.color}40)`,
                           stroke: "#7e9a61ff",
                           strokeWidth: 0.30
-                        }} 
+                        }}
                       />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload }: any) => {
                       if (active && payload && payload.length) {
                         const companyData = payload[0].payload;
@@ -474,7 +475,7 @@ export default function Insights() {
                 </PieChart>
               </ResponsiveContainer>
             </motion.div>
-            
+
             {/* Top 10 Company Rankings - Side Panel */}
             <motion.div className="space-y-4" variants={itemVariants}>
               <div className="flex items-center gap-3 mb-6">
@@ -493,9 +494,9 @@ export default function Insights() {
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden"
-                      style={{ 
+                      style={{
                         background: `linear-gradient(135deg, ${company.color} 0%, ${company.color}80 100%)`,
                         boxShadow: `0 4px 16px ${company.color}40`
                       }}
@@ -507,7 +508,7 @@ export default function Insights() {
                     <div className="flex-1">
                       <h4 className="font-bold text-white text-sm">{company.name}</h4>
                       <div className="flex items-center gap-2">
-                        <div 
+                        <div
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: company.color }}
                         />
@@ -523,41 +524,40 @@ export default function Insights() {
       </section>
 
       {/* Popular Roles */}
-      <section className="py-16 px-6 relative overflow-hidden">
+      <section className="py-12 sm:py-16 px-4 sm:px-6 relative overflow-hidden">
         {/* Floating background elements */}
-        <motion.div className="absolute top-1/4 right-1/4 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl animate-pulse" style={{animationDelay: '0s'}} />
-        <motion.div className="absolute bottom-1/4 left-1/4 w-24 h-24 bg-blue-400/10 rounded-full blur-xl animate-pulse" style={{animationDelay: '1s'}} />
-        <motion.div className="absolute top-1/2 right-1/3 w-16 h-16 bg-indigo-400/10 rounded-full blur-lg animate-pulse" style={{animationDelay: '2s'}} />
-        
+        <motion.div className="absolute top-1/4 right-1/4 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '0s' }} />
+        <motion.div className="absolute bottom-1/4 left-1/4 w-24 h-24 bg-blue-400/10 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <motion.div className="absolute top-1/2 right-1/3 w-16 h-16 bg-indigo-400/10 rounded-full blur-lg animate-pulse" style={{ animationDelay: '2s' }} />
+
         <div className="max-w-7xl mx-auto relative z-10">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-  
-  {/* Updated h2 with the white-to-blue gradient */}
-  <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-    In-Demand Job Roles
-  </h2>
-  
-  {/* Updated underline to match the new gradient */}
-  <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
-  
-  {/* Unchanged subtitle */}
-  <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-    Most sought-after positions in the job market.
-  </p>
-  
-</motion.div>
-          
+
+            {/* Updated h2 with the white-to-blue gradient */}
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+              In-Demand Job Roles
+            </h2>
+
+            {/* Updated underline to match the new gradient */}
+            <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
+
+            {/* Unchanged subtitle */}
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              Most sought-after positions in the job market.
+            </p>
+
+          </motion.div>
+
           {/* Year Filter Tabs */}
-          <motion.div className="flex flex-wrap justify-center gap-3 mb-8" variants={itemVariants}>
+          <motion.div className="flex flex-nowrap overflow-x-auto gap-2 sm:gap-3 mb-8 pb-2 scrollbar-hide" variants={itemVariants}>
             {availableYears.map((year) => (
               <button
                 key={year}
                 onClick={() => setActiveTab(year)}
-                className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 ${
-                  activeTab === year
+                className={`px-3 sm:px-4 py-2 rounded-full font-semibold transition-all duration-300 whitespace-nowrap flex-shrink-0 ${activeTab === year
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/25 scale-105'
                     : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-600/30 hover:scale-105'
-                }`}
+                  }`}
               >
                 {year}
               </button>
@@ -599,8 +599,8 @@ export default function Insights() {
             <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/30 chart-hover">
               <div className="text-center mb-6">
                 <h3 className="text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-  Yearly Placement Overview
-</h3>
+                  Yearly Placement Overview
+                </h3>
                 <p className="text-slate-400 text-sm">Total placements and top roles by year</p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
@@ -628,28 +628,28 @@ export default function Insights() {
       </section>
 
       {/* Package Trends */}
-      <section className="py-16 px-6 relative overflow-hidden">
-        <motion.div className="absolute top-1/3 left-1/3 w-2 h-2 bg-cyan-400/30 rounded-full animate-ping" style={{animationDelay: '0.8s'}} />
-        <motion.div className="absolute bottom-1/4 right-1/3 w-1.5 h-1.5 bg-blue-300/40 rounded-full animate-ping" style={{animationDelay: '2s'}} />
+      <section className="py-12 sm:py-16 px-4 sm:px-6 relative overflow-hidden">
+        <motion.div className="absolute top-1/3 left-1/3 w-2 h-2 bg-cyan-400/30 rounded-full animate-ping" style={{ animationDelay: '0.8s' }} />
+        <motion.div className="absolute bottom-1/4 right-1/3 w-1.5 h-1.5 bg-blue-300/40 rounded-full animate-ping" style={{ animationDelay: '2s' }} />
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-12" variants={itemVariants}>
-  
-  {/* Updated h2 with the white-to-blue gradient */}
-  <h2 className="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
-    Salary Growth Trajectory
-  </h2>
-  
-  {/* Updated underline to match the new gradient */}
-  <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
-  
-  {/* Unchanged subtitle */}
-  <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-    Trends in compensation packages over the years.
-  </p>
-  
-</motion.div>
+
+            {/* Updated h2 with the white-to-blue gradient */}
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-slate-100 to-blue-400 bg-clip-text text-transparent drop-shadow-lg inline-block">
+              Salary Growth Trajectory
+            </h2>
+
+            {/* Updated underline to match the new gradient */}
+            <div className="mx-auto w-16 h-1 bg-gradient-to-r from-slate-100 to-blue-400 rounded-full mb-4"></div>
+
+            {/* Unchanged subtitle */}
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              Trends in compensation packages over the years.
+            </p>
+
+          </motion.div>
           <motion.div className={glassyChart} variants={cardVariants} whileHover="hover">
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={300} className="sm:h-[400px]">
               <AreaChart data={data.package_data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="year" stroke="#A5F3FC" tick={{ fontWeight: 600 }} />

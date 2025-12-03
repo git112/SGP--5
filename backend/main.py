@@ -3,7 +3,9 @@ from sse_starlette.sse import EventSourceResponse
 import json 
 RAG_SERVICE_URL = "http://localhost:8001"
 
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
+import shutil
+import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest, SendOTPRequest, VerifyOTPRequest, OTPResponse, LoginWithOTPRequest, ResetPasswordWithOTPRequest
@@ -824,6 +826,92 @@ async def test_email(payload: dict):
         return {"success": result, "message": "Test email sent" if result else "Failed to send test email"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error sending test email: {str(e)}")
+
+@app.post("/api/admin/upload")
+async def upload_admin_sheet(
+    file: UploadFile = File(...),
+    type: str = Form(...),
+    year: Optional[str] = Form(None),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Upload a sheet for Insights, Companies, or Chatbot.
+    - Insights/Companies: Appends data to Google Sheets.
+    - Chatbot: Saves file to chatbot/data and triggers reload.
+    """
+    # Verify admin access
+    users = get_user_collection()
+    user_doc = users.find_one({"email": current_user})
+    if not user_doc or user_doc.get("user_type") != "faculty":
+         raise HTTPException(status_code=403, detail="Only admin can upload sheets")
+
+    try:
+        if type == "chatbot":
+            # Save to chatbot/data
+            chatbot_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../chatbot/data"))
+            os.makedirs(chatbot_data_dir, exist_ok=True)
+            
+            file_path = os.path.join(chatbot_data_dir, file.filename)
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            # Trigger reload
+            async with httpx.AsyncClient() as client:
+                try:
+                    resp = await client.post(f"{RAG_SERVICE_URL}/reload", timeout=60.0)
+                    if resp.status_code != 200:
+                        return {"message": "File uploaded but chatbot reload failed", "details": resp.text}
+                except Exception as e:
+                     return {"message": "File uploaded but chatbot reload failed", "details": str(e)}
+            
+            return {"message": f"File uploaded and chatbot reloaded successfully. Saved to {file.filename}"}
+
+        elif type in ["insights", "companies"]:
+            # Read file using pandas
+            contents = await file.read()
+            if file.filename.endswith('.xlsx') or file.filename.endswith('.xls'):
+                try:
+                    df = pd.read_excel(contents)
+                except Exception:
+                    # Fallback for engine issues
+                    import io
+                    df = pd.read_excel(io.BytesIO(contents))
+            elif file.filename.endswith('.csv'):
+                import io
+                df = pd.read_csv(io.BytesIO(contents))
+            else:
+                raise HTTPException(status_code=400, detail="Invalid file format. Please upload Excel or CSV.")
+            
+            # Add Year column if provided and missing
+            if year and 'year' not in df.columns.str.lower():
+                df['Year'] = year
+            
+            # Convert to list of lists
+            # Handle NaN/Inf
+            df = df.fillna('')
+            values = df.values.tolist()
+            
+            # Determine target sheet
+            target_sheet_name = "Sheet1" # Default
+            all_sheets = sheets_service.get_all_sheet_names()
+            
+            if type == "companies":
+                match = next((s for s in all_sheets if "company" in s.lower() or "companies" in s.lower()), None)
+                if match: target_sheet_name = match
+            elif type == "insights":
+                match = next((s for s in all_sheets if "placement" in s.lower() or "data" in s.lower()), None)
+                if match: target_sheet_name = match
+
+            sheets_service.append_sheet_data(SPREADSHEET_ID, f"{target_sheet_name}!A1", values)
+            
+            return {"message": f"Successfully appended {len(values)} rows to {target_sheet_name}"}
+
+        else:
+            raise HTTPException(status_code=400, detail="Invalid upload type")
+
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

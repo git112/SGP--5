@@ -81,7 +81,7 @@ const FloatingChatbot = () => {
       }
 
       const data = await response.json();
-      
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: data.answer || 'Sorry, I couldn\'t process your request.',
@@ -147,62 +147,62 @@ const FloatingChatbot = () => {
       {/* Floating Button - Only show when chat is closed */}
       {!isOpen && (
         <motion.div
-          className="fixed bottom-6 right-6 z-40"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           transition={{ delay: 2, type: "spring", stiffness: 200 }}
         >
-        <div className="relative">
-          {/* Unread Badge */}
-          {unreadCount > 0 && (
+          <div className="relative">
+            {/* Unread Badge */}
+            {unreadCount > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-2 -right-2 z-10"
+              >
+                <Badge className="bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              </motion.div>
+            )}
+
+            {/* Pulse Animation */}
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-2 -right-2 z-10"
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{ opacity: 0.3 }}
+            />
+
+            <Button
+              onClick={toggleChat}
+              className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 border-2 border-white/20 hover:border-white/40"
+              size="lg"
             >
-              <Badge className="bg-red-500 text-white text-xs px-2 py-1 rounded-full shadow-lg">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
-            </motion.div>
-          )}
-          
-          {/* Pulse Animation */}
-          <motion.div
-            className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            style={{ opacity: 0.3 }}
-          />
-          
-          <Button
-            onClick={toggleChat}
-            className="relative w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 border-2 border-white/20 hover:border-white/40"
-            size="lg"
-          >
-            <motion.div
-              animate={{ 
-                rotate: (() => {
-                  if (!isOpen) return 0;
-                  if (isMinimized) return 0;
-                  return 45;
-                })(),
-                scale: (() => {
-                  if (isOpen) return 0.9;
-                  return 1;
-                })()
-              }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-            >
-              {(() => {
-                if (!isOpen) return <Bot size={28} />;
-                if (isMinimized) return <MessageCircle size={28} />;
-                return <X size={28} />;
-              })()}
-            </motion.div>
-          </Button>
-        </div>
-      </motion.div>
+              <motion.div
+                animate={{
+                  rotate: (() => {
+                    if (!isOpen) return 0;
+                    if (isMinimized) return 0;
+                    return 45;
+                  })(),
+                  scale: (() => {
+                    if (isOpen) return 0.9;
+                    return 1;
+                  })()
+                }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                {(() => {
+                  if (!isOpen) return <Bot size={28} />;
+                  if (isMinimized) return <MessageCircle size={28} />;
+                  return <X size={28} />;
+                })()}
+              </motion.div>
+            </Button>
+          </div>
+        </motion.div>
       )}
 
       {/* Chat Window */}
@@ -210,22 +210,22 @@ const FloatingChatbot = () => {
         {isOpen && (
           <motion.div
             className={(() => {
-              if (isMaximized) return 'fixed z-50 top-8 left-8 right-8 bottom-8';
-              if (isMinimized) return 'fixed z-40 right-6 bottom-24 w-80 h-16';
-              return 'fixed z-40 right-6 bottom-24 w-80 h-96';
+              if (isMaximized) return 'fixed z-50 inset-2 sm:top-8 sm:left-8 sm:right-8 sm:bottom-8';
+              if (isMinimized) return 'fixed z-40 right-4 bottom-20 sm:right-6 sm:bottom-24 w-full max-w-sm sm:w-80 h-16';
+              return 'fixed z-40 right-4 bottom-20 sm:right-6 sm:bottom-24 w-full max-w-sm sm:w-80 md:w-96 h-[32rem] sm:h-96';
             })()}
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1, 
+            animate={{
+              opacity: 1,
+              scale: 1,
               y: 0
             }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             <Card className="h-full flex flex-col bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl overflow-hidden">
-              <CardHeader className="pb-3 pt-4 px-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-b border-white/10 flex flex-row items-center justify-between flex-shrink-0">
-                <CardTitle className="text-white text-lg flex items-center gap-2">
+              <CardHeader className="pb-3 pt-4 px-3 sm:px-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-b border-white/10 flex flex-row items-center justify-between flex-shrink-0">
+                <CardTitle className="text-white text-base sm:text-lg flex items-center gap-2">
                   <div className="relative">
                     <Bot size={20} />
                     <motion.div
@@ -269,15 +269,15 @@ const FloatingChatbot = () => {
                   </Button>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
                 {!isMinimized && (
                   <>
                     {/* Messages Area */}
-                    <div 
-                      className="flex-1 p-4 overflow-y-auto chat-scrollbar" 
-                      style={{ 
-                        maxHeight: isMaximized ? 'calc(100vh - 240px)' : '260px',
+                    <div
+                      className="flex-1 p-3 sm:p-4 overflow-y-auto chat-scrollbar"
+                      style={{
+                        maxHeight: isMaximized ? 'calc(100vh - 200px)' : '280px',
                         minHeight: '180px'
                       }}
                     >
@@ -291,11 +291,10 @@ const FloatingChatbot = () => {
                             className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                                message.isUser
+                              className={`max-w-[90%] sm:max-w-[85%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 ${message.isUser
                                   ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
                                   : 'bg-white/20 text-white backdrop-blur-sm border border-white/10'
-                              }`}
+                                }`}
                             >
                               <div className="flex items-start gap-3">
                                 {!message.isUser && (
@@ -309,9 +308,9 @@ const FloatingChatbot = () => {
                                   </div>
                                   <div className="text-xs opacity-60 mt-2 flex items-center gap-1">
                                     <span>
-                                      {message.timestamp.toLocaleTimeString([], { 
-                                        hour: '2-digit', 
-                                        minute: '2-digit' 
+                                      {message.timestamp.toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
                                       })}
                                     </span>
                                     {message.isUser && (
@@ -331,7 +330,7 @@ const FloatingChatbot = () => {
                             </div>
                           </motion.div>
                         ))}
-                        
+
                         {isLoading && (
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
@@ -349,15 +348,15 @@ const FloatingChatbot = () => {
                             </div>
                           </motion.div>
                         )}
-                        
+
                         <div ref={messagesEndRef} />
                       </div>
                     </div>
-                
+
                     {/* Input Area */}
-                    <div className="p-4 border-t border-white/10 bg-white/5">
+                    <div className="p-3 sm:p-4 border-t border-white/10 bg-white/5">
                       {/* Chat Controls */}
-                      <div className="flex justify-between items-center mb-3">
+                      <div className="hidden sm:flex justify-between items-center mb-3">
                         <div className="flex gap-2">
                           <Button
                             onClick={minimizeChat}
@@ -382,16 +381,16 @@ const FloatingChatbot = () => {
                           {isMaximized ? "Maximized" : "Normal"}
                         </div>
                       </div>
-                      
-                      <div className="flex gap-3">
+
+                      <div className="flex gap-2 sm:gap-3">
                         <div className="flex-1 relative">
                           <Input
                             ref={inputRef}
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyPress}
-                            placeholder="Ask about placement data, companies, or career guidance..."
-                            className="w-full bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 rounded-xl"
+                            placeholder="Ask about placements..."
+                            className="w-full bg-white/10 border-white/20 text-white text-sm sm:text-base placeholder:text-white/60 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 rounded-xl"
                             disabled={isLoading}
                           />
                         </div>

@@ -145,6 +145,36 @@ class GoogleSheetsService:
             self.last_error = f"Error fetching insights data: {str(e)}"
             logger.error(f"Error fetching insights data: {e}")
             return self._get_fallback_data()
+
+    def append_sheet_data(self, spreadsheet_id: str, range_name: str, values: List[List[Any]]) -> Dict[str, Any]:
+        """Append data to a specific range in Google Sheets"""
+        try:
+            if not self.service:
+                self._authenticate()
+            
+            body = {
+                'values': values
+            }
+            
+            result = self.service.spreadsheets().values().append(
+                spreadsheetId=spreadsheet_id, 
+                range=range_name,
+                valueInputOption='USER_ENTERED',
+                insertDataOption='INSERT_ROWS',
+                body=body
+            ).execute()
+            
+            logger.info(f"Appended {result.get('updates', {}).get('updatedRows')} rows to {range_name}")
+            return result
+            
+        except HttpError as e:
+            self.last_error = f"HTTP error appending to {range_name}: {e}"
+            logger.error(f"HTTP error appending to {range_name}: {e}")
+            raise
+        except Exception as e:
+            self.last_error = f"Error appending to {range_name}: {str(e)}"
+            logger.error(f"Error appending to {range_name}: {e}")
+            raise
     
     def _get_fallback_data(self) -> Dict[str, Any]:
         """Return fallback sample data if real data fetch fails"""
