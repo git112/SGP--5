@@ -9,6 +9,8 @@ export default function CompanyDirectory() {
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("All Locations");
   const [pkg, setPkg] = useState("All Packages");
+  const [role, setRole] = useState("All Roles");
+  const [status, setStatus] = useState("All Status");
   const [companiesData, setCompaniesData] = useState<CompaniesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +113,9 @@ export default function CompanyDirectory() {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
     const matchesLocation = location === "All Locations" || normalizeLocation(c.location) === location;
     const matchesPkg = pkg === "All Packages" || pkgKey === pkg;
-    return matchesSearch && matchesLocation && matchesPkg;
+    const matchesRole = role === "All Roles" || c.roles.some(r => r.trim().toLowerCase() === role.toLowerCase());
+    const matchesStatus = status === "All Status" || c.status === status;
+    return matchesSearch && matchesLocation && matchesPkg && matchesRole && matchesStatus;
   });
 
   // Sort by highest package first using derived value

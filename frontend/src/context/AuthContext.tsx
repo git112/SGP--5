@@ -29,7 +29,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Backend API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Use environment variable or default to relative path /api
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -95,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Attempting login for:', email);
       console.log('API URL:', API_BASE_URL);
-      
+
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
       console.log('Login successful, token received');
-      const userData: User = { 
+      const userData: User = {
         email: data.email,
         user_type: data.user_type
       };
@@ -133,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string) => {
     try {
       console.log('Attempting signup for:', email);
-      
+
       const response = await fetch(`${API_BASE_URL}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -169,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const verifySignup = async (email: string, password: string, otp: string) => {
     try {
       console.log('Attempting signup verification for:', email);
-      
+
       const response = await fetch(`${API_BASE_URL}/verify-signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -226,10 +227,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`${API_BASE_URL}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          token, 
-          new_password: newPassword, 
-          confirm_password: newPassword 
+        body: JSON.stringify({
+          token,
+          new_password: newPassword,
+          confirm_password: newPassword
         })
       });
 
@@ -250,11 +251,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`${API_BASE_URL}/reset-password-with-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email,
           otp,
           new_password: newPassword,
-          confirm_password: newPassword 
+          confirm_password: newPassword
         })
       });
 
@@ -328,7 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithOTP = async (email: string, otp: string) => {
     try {
       console.log('Attempting OTP login for:', email);
-      
+
       const response = await fetch(`${API_BASE_URL}/login-with-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -350,7 +351,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
       console.log('OTP login successful, token received');
-      const userData: User = { 
+      const userData: User = {
         email: data.email,
         user_type: data.user_type
       };
@@ -366,14 +367,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      isLoggedIn, 
-      user, 
+    <AuthContext.Provider value={{
+      isLoggedIn,
+      user,
       token,
       isHydrated,
-      login, 
-      logout, 
-      signup, 
+      login,
+      logout,
+      signup,
       verifySignup,
       forgotPassword,
       resetPassword,

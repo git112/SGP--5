@@ -120,7 +120,7 @@ const AdminPage: React.FC = () => {
 
     setIsUploading(true);
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || '/api';
       const res = await fetch(`${backendUrl}/api/admin/upload`, {
         method: 'POST',
         headers: {
