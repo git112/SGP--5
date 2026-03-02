@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Send, X, Bot, User, Minimize2, Maximize2, MessageCircle, Loader2 } from 'lucide-react';
+import MDEditor from '@uiw/react-md-editor';
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  sources?: { source: string; sheet?: string; year?: string; type?: string }[];
 }
 
 const FloatingChatbot = () => {
@@ -68,28 +70,76 @@ const FloatingChatbot = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch('http://localhost:8001/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: userMessage.text }),
+        body: JSON.stringify({ query: userMessage.text, stream: true })
       });
 
       if (!response.ok) {
         throw new Error('Failed to get response');
       }
 
-      const data = await response.json();
-
+      // Create a placeholder for the bot message
+      const botMessageId = (Date.now() + 1).toString();
       const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.answer || 'Sorry, I couldn\'t process your request.',
+        id: botMessageId,
+        text: '',
         isUser: false,
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, botMessage]);
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      // ✅ FIXED: track raw tokens separately, build display text with proper spacing
+      let rawTokens: string[] = [];
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);  // ✅ Don't trim — spaces are meaningful
+
+              if (data.trim() === '[DONE]') {
+                continue;
+              }
+
+              if (data.trim().startsWith('[SOURCES]')) {
+                try {
+                  const sources = JSON.parse(data.trim().slice(9));
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === botMessageId ? { ...msg, sources } : msg
+                  ));
+                } catch (e) {
+                  console.error('Error parsing sources:', e);
+                }
+                continue;
+              }
+
+              // ✅ FIXED: accumulate raw tokens and join them directly
+              // The LLM already includes spaces between words in its tokens
+              // Don't add extra spaces — just concatenate as-is
+              if (data !== '') {
+                rawTokens.push(data);
+                const fullText = rawTokens.join('');
+
+                setMessages(prev => prev.map(msg =>
+                  msg.id === botMessageId ? { ...msg, text: fullText } : msg
+                ));
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -127,19 +177,26 @@ const FloatingChatbot = () => {
   const maximizeChat = () => {
     setIsMaximized(!isMaximized);
     setIsMinimized(false);
-    // Scroll to bottom when maximizing
     setTimeout(() => {
       scrollToBottom();
     }, 100);
   };
 
-  const formatMessage = (text: string) => {
-    return text.split('\n').map((line, index) => (
-      <span key={`line-${index}-${line.slice(0, 10)}`}>
-        {line}
-        {index < text.split('\n').length - 1 && <br />}
-      </span>
-    ));
+  const renderMessageContent = (text: string) => {
+    return (
+      <div className="wmde-markdown-var" data-color-mode="dark">
+        <MDEditor.Markdown
+          source={text}
+          style={{
+            whiteSpace: 'pre-wrap',
+            backgroundColor: 'transparent',
+            color: 'inherit',
+            fontSize: 'inherit',
+            fontFamily: 'inherit'
+          }}
+        />
+      </div>
+    );
   };
 
   return (
@@ -215,11 +272,7 @@ const FloatingChatbot = () => {
               return 'fixed z-40 right-4 bottom-20 sm:right-6 sm:bottom-24 w-full max-w-sm sm:w-80 md:w-96 h-[32rem] sm:h-96';
             })()}
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0
-            }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
@@ -292,20 +345,37 @@ const FloatingChatbot = () => {
                           >
                             <div
                               className={`max-w-[90%] sm:max-w-[85%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 ${message.isUser
-                                  ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
-                                  : 'bg-white/20 text-white backdrop-blur-sm border border-white/10'
+                                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
+                                : 'bg-white/20 text-white backdrop-blur-sm border border-white/10'
                                 }`}
                             >
                               <div className="flex items-start gap-3">
-                                {!message.isUser && (
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center flex-shrink-0">
-                                    <Bot size={16} />
-                                  </div>
-                                )}
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                                    {formatMessage(message.text)}
+                                  <div className="text-sm leading-relaxed min-h-[1.5rem] flex items-center">
+                                    {message.text ? (
+                                      renderMessageContent(message.text)
+                                    ) : (
+                                      <div className="flex items-center gap-2 opacity-70">
+                                        <Loader2 size={14} className="animate-spin" />
+                                        <span>AI is thinking...</span>
+                                      </div>
+                                    )}
                                   </div>
+
+                                  {message.sources && message.sources.length > 0 && (
+                                    <div className="mt-3 pt-2 border-t border-white/10 flex flex-wrap gap-1">
+                                      {message.sources.map((src, i) => (
+                                        <Badge
+                                          key={i}
+                                          variant="outline"
+                                          className="text-[10px] bg-white/5 border-white/10 text-cyan-300 py-0 px-1"
+                                        >
+                                          {src.source} {src.year ? `(${src.year})` : ''}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+
                                   <div className="text-xs opacity-60 mt-2 flex items-center gap-1">
                                     <span>
                                       {message.timestamp.toLocaleTimeString([], {
@@ -321,33 +391,11 @@ const FloatingChatbot = () => {
                                     )}
                                   </div>
                                 </div>
-                                {message.isUser && (
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-slate-600 to-slate-700 flex items-center justify-center flex-shrink-0">
-                                    <User size={16} />
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </motion.div>
                         ))}
 
-                        {isLoading && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex justify-start"
-                          >
-                            <div className="bg-white/20 text-white backdrop-blur-sm rounded-2xl px-4 py-3 flex items-center gap-3 border border-white/10">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
-                                <Bot size={16} />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Loader2 size={16} className="animate-spin" />
-                                <span className="text-sm">AI is thinking...</span>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
 
                         <div ref={messagesEndRef} />
                       </div>

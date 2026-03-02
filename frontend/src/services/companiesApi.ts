@@ -27,7 +27,8 @@ export interface CompaniesResponse {
   error?: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Use environment variable or default to relative path /api
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export class CompaniesApiService {
   private static instance: CompaniesApiService;
@@ -35,7 +36,7 @@ export class CompaniesApiService {
   private lastFetch: number = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): CompaniesApiService {
     if (!CompaniesApiService.instance) {
@@ -58,7 +59,7 @@ export class CompaniesApiService {
       }
 
       console.log(`Fetching companies data from sheet ${sheetNumber}...`);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/companies?sheet_number=${sheetNumber}`, {
         method: 'GET',
         headers: {
@@ -71,17 +72,17 @@ export class CompaniesApiService {
       }
 
       const data: CompaniesResponse = await response.json();
-      
+
       // Update cache
       this.cache = data;
       this.lastFetch = Date.now();
-      
+
       console.log(`Successfully fetched ${data.companies.length} companies`);
       return data;
-      
+
     } catch (error) {
       console.error('Error fetching companies:', error);
-      
+
       // Return cached data if available, even if expired
       if (this.cache) {
         console.log('Returning cached data due to fetch error');
@@ -90,7 +91,7 @@ export class CompaniesApiService {
           error: `Failed to fetch fresh data: ${error instanceof Error ? error.message : 'Unknown error'}`
         };
       }
-      
+
       // Return empty response with error
       return {
         companies: [],

@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use environment variable or default to relative path /api
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export type CreateAnnouncementInput = {
   company: string;
@@ -22,7 +23,7 @@ export async function createAnnouncement(input: CreateAnnouncementInput, token: 
   return res.json();
 }
 
-export async function listAnnouncements(sort: 'newest'|'oldest' = 'newest') {
+export async function listAnnouncements(sort: 'newest' | 'oldest' = 'newest') {
   const res = await fetch(`${API_URL}/api/announcements?sort=${sort}`);
   if (!res.ok) throw new Error('Failed to fetch announcements');
   return res.json();

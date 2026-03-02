@@ -21,7 +21,7 @@ type Announcement = {
   created_at: string;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const AnnouncementPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -78,7 +78,7 @@ const AnnouncementPage: React.FC = () => {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={async ()=>{
+                          onClick={async () => {
                             if (!token) { toast.error('Login expired'); return; }
                             if (!confirm('Delete this announcement?')) return;
                             try {
