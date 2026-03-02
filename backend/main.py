@@ -615,16 +615,22 @@ async def debug_values(range: str):
 async def chat_with_bot(request: dict):
     """
     Chat endpoint. Forwards the query to the separate RAG service.
+    Supports both streaming and synchronous modes.
     """
     try:
         query = request.get("query", "").strip()
+        stream = request.get("stream", False)
+        
         if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
+        if stream:
+            return await chat_with_bot_stream(request)
+            
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
                 f"{RAG_SERVICE_URL}/chat",
-                json={"query": query}
+                json={"query": query, "stream": False}
             )
         
         if response.status_code != 200:
@@ -683,7 +689,6 @@ async def chat_with_bot_stream(request: dict):
 # Route alias to match frontend path
 @app.post("/api/chat/stream")
 async def api_chat_stream(request: dict):
-    return await chat_with_bot_stream(request)
     return await chat_with_bot_stream(request)
 
 @app.get("/api/companies")

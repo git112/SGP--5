@@ -31,7 +31,9 @@ MANIFEST
 backend/.env
 backend/data/
 backend/vector_db/
-chatbot/data
+chatbot/.env
+chatbot/data/
+chatbot/vector_db/
 
 
 # Google Sheets authentication
