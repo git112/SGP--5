@@ -1,11 +1,8 @@
-# --- Web Server & API ---
 fastapi
 uvicorn
 python-multipart
 sse-starlette
 httpx
-
-# --- Authentication & Security ---
 python-dotenv
 pymongo
 PyJWT
@@ -14,26 +11,19 @@ email-validator
 google-auth
 google-auth-oauthlib
 google-api-python-client
-
-# --- Core RAG & AI Libraries (GROQ & Nomic/Pinecone) ---
+pinecone-client>=3.0.0
+rank-bm25>=0.2.2
+PyPDF2>=3.0.0
+pypdf>=3.0.0
+chromadb
+pandas
+openpyxl
+python-docx
+unstructured
 langchain
 langchain-core
 langchain-community
 langchain-text-splitters
 langchain-groq
-langchain-nomic>=0.1.0
-langchain-pinecone>=0.1.0
-pinecone-client>=3.0.0
-rank-bm25>=0.2.2
-PyPDF2>=3.0.0
-pypdf>=3.0.0
-
-# The local vector database
-chromadb
-
-# --- Document Processing & Data Handling ---
-pandas
-openpyxl
-pypdf
-python-docx
-unstructured
+langchain-nomic
+langchain-pinecone
