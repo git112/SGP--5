@@ -108,7 +108,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
     
     return email
 
-@app.post("/signup")
+@app.post("/api/signup")
 def signup(user: UserCreate):
     if user.password != user.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
@@ -162,7 +162,7 @@ def signup(user: UserCreate):
         else:
             raise HTTPException(status_code=500, detail=result["message"])
 
-@app.post("/verify-signup")
+@app.post("/api/verify-signup")
 def verify_signup(request: dict):
     """Verify OTP and complete user registration"""
     try:
@@ -215,7 +215,7 @@ def verify_signup(request: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in signup verification: {str(e)}")
 
-@app.post("/login")
+@app.post("/api/login")
 def login(user: UserLogin):
     # Validate email format first
     if not validate_email_domain(user.email):
@@ -251,7 +251,7 @@ def login(user: UserLogin):
     user_type = user_doc.get("user_type", get_user_type(user.email))
     return {"message": "Login successful", "token": token, "email": user.email, "user_type": user_type}
 
-@app.post("/send-otp")
+@app.post("/api/send-otp")
 def send_otp(request: SendOTPRequest):
     """Send OTP to user's email for login verification"""
     try:
@@ -283,7 +283,7 @@ def send_otp(request: SendOTPRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error sending OTP: {str(e)}")
 
-@app.post("/verify-otp")
+@app.post("/api/verify-otp")
 def verify_otp(request: VerifyOTPRequest):
     """Verify OTP code"""
     try:
@@ -304,7 +304,7 @@ def verify_otp(request: VerifyOTPRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error verifying OTP: {str(e)}")
 
-@app.post("/login-with-otp")
+@app.post("/api/login-with-otp")
 def login_with_otp(request: LoginWithOTPRequest):
     """Login using email and OTP (no password required)"""
     try:
@@ -362,7 +362,7 @@ def login_with_otp(request: LoginWithOTPRequest):
 
 # Removed Google OAuth endpoint
 
-@app.post("/forgot-password")
+@app.post("/api/forgot-password")
 def forgot_password(request: ForgotPasswordRequest):
     """Send password reset email"""
     try:
@@ -393,7 +393,7 @@ def forgot_password(request: ForgotPasswordRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@app.post("/reset-password")
+@app.post("/api/reset-password")
 def reset_password(request: ResetPasswordRequest):
     """Reset password using token"""
     try:
@@ -421,7 +421,7 @@ def reset_password(request: ResetPasswordRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@app.post("/reset-password-with-otp")
+@app.post("/api/reset-password-with-otp")
 def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
     """Reset password using an email + OTP flow (no token links)."""
     try:
@@ -458,7 +458,7 @@ def reset_password_with_otp(request: ResetPasswordWithOTPRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@app.get("/me")
+@app.get("/api/me")
 def get_current_user_info(current_user: str = Depends(get_current_user)):
     """Get current user information"""
     users = get_user_collection()
@@ -639,7 +639,7 @@ async def debug_values(range: str):
         raise HTTPException(status_code=500, detail=f"Debug values error: {str(e)}")
 
 # Chatbot RAG endpoint
-@app.post("/chat")
+@app.post("/api/chat")
 async def chat_with_bot(request: dict):
     """
     Chat endpoint. Forwards the query to the separate RAG service.
@@ -672,49 +672,7 @@ async def chat_with_bot(request: dict):
         logger.error(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Route alias to match frontend path
-@app.post("/api/chat")
-async def api_chat(request: dict):
-    return await chat_with_bot(request)
-
-
-@app.post("/chat/stream")
-async def chat_with_bot_stream(request: dict):
-    """
-    Streaming chat endpoint. Forwards to the RAG service stream.
-    """
-    try:
-        query = request.get("query", "").strip()
-        if not query:
-            raise HTTPException(status_code=400, detail="Query cannot be empty")
-
-        async def stream_forwarder():
-            try:
-                async with httpx.AsyncClient(timeout=120.0) as client:
-                    async with client.stream(
-                        "POST",
-                        f"{RAG_SERVICE_URL}/chat/stream",
-                        json={"query": query}
-                    ) as response:
-                        if response.status_code != 200:
-                             # Yield a single error chunk
-                             error_detail = response.json().get("detail", "Unknown error from RAG service")
-                             yield f"data: {json.dumps({'error': error_detail})}\n\n"
-                        else:
-                            async for chunk in response.aiter_bytes():
-                                yield chunk
-            except httpx.ConnectError:
-                yield f"data: {json.dumps({'error': 'Chatbot service is unavailable.'})}\n\n"
-            except Exception as e:
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
-
-        return EventSourceResponse(stream_forwarder())
-        
-    except Exception as e:
-        logger.error(f"Error in streaming chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing your request")
-
-# Route alias to match frontend path
+# Consolidate chat endpoints
 @app.post("/api/chat/stream")
 async def api_chat_stream(request: dict):
     return await chat_with_bot_stream(request)
