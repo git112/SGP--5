@@ -25,7 +25,7 @@ class GoogleSheetsService:
         self.last_error = ""
         
         # Configuration
-        self.spreadsheet_id = "1WQM2f0lPdrpyP1FkGgIefsxa1oa-_Sa4txM9o1oEeH8"
+        self.spreadsheet_id = os.getenv("GOOGLE_SPREADSHEET_ID", "1WQM2f0lPdrpyP1FkGgIefsxa1oa-_Sa4txM9o1oEeH8")
         self.service_account_file = os.path.join(os.path.dirname(__file__), 'placementor-ai.json')
         
         self._authenticate()

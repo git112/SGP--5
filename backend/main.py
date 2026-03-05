@@ -1,7 +1,7 @@
 import httpx
 from sse_starlette.sse import EventSourceResponse 
 import json 
-RAG_SERVICE_URL = "http://localhost:8001"
+RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://localhost:8001")
 
 from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
 import shutil
@@ -55,11 +55,28 @@ logger = logging.getLogger(__name__)
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change this to your frontend URL in production
+    allow_origins=[
+        "https://placementor-ai-two.vercel.app",
+        "http://localhost:8080",
+        "http://localhost:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global Exception Handler for 500 Errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    import traceback
+    error_details = traceback.format_exc()
+    logger.error(f"Global 500 Error: {str(exc)}\n{error_details}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)}
+    )
+
+from fastapi.responses import JSONResponse
 
 # Mount competency test API (interview endpoints, Python port of Node service)
 app.include_router(interview_router)
