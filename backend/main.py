@@ -1,13 +1,25 @@
+import os
 import httpx
-from sse_starlette.sse import EventSourceResponse 
-import json 
+import json
+import logging
+import shutil
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta
+
+from sse_starlette.sse import EventSourceResponse
+from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
+from dotenv import load_dotenv
+from bson.objectid import ObjectId
+
 RAG_SERVICE_URL = os.getenv("RAG_SERVICE_URL", "http://localhost:8001")
 
-from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, Form
-import shutil
-import pandas as pd
-from fastapi.middleware.cors import CORSMiddleware
-import logging
+# Load environment from backend/.env regardless of CWD
+_ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=_ENV_PATH)
+
 from signup.schemas import UserCreate, UserLogin, ForgotPasswordRequest, ResetPasswordRequest, SendOTPRequest, VerifyOTPRequest, OTPResponse, LoginWithOTPRequest, ResetPasswordWithOTPRequest
 from signup.utils import (
     validate_email_domain,
@@ -16,27 +28,14 @@ from signup.utils import (
     verify_password,
     get_user_type
 )
-from signup.database import get_user_collection
+from signup.database import get_user_collection, db
 from signup.auth_service import AuthService
 from signup.otp_service import OTPService
-from signup.database import db
-from bson.objectid import ObjectId
-import os
-from dotenv import load_dotenv
-from typing import Optional
-from datetime import datetime, timedelta
-
-# Load environment from backend/.env regardless of CWD
-_ENV_PATH = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path=_ENV_PATH)
 
 from sheets_service import sheets_service
 from companies_sheets_service import CompaniesSheetsService
 from interview_api import router as interview_router
 from interview_api import resume_router
-
-
-app = FastAPI()
 
 # Initialize auth service
 auth_service = AuthService()
@@ -44,10 +43,15 @@ auth_service = AuthService()
 # Initialize OTP service
 otp_service = OTPService()
 
-# RAG service is automatically initialized when imported
-
 # Initialize Companies Sheets service
 companies_service = CompaniesSheetsService()
+
+
+app = FastAPI()
+
+# Mount competency test API (interview endpoints, Python port of Node service)
+app.include_router(interview_router)
+app.include_router(resume_router)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -75,12 +79,6 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={"detail": "Internal Server Error", "error": str(exc)}
     )
-
-from fastapi.responses import JSONResponse
-
-# Mount competency test API (interview endpoints, Python port of Node service)
-app.include_router(interview_router)
-app.include_router(resume_router)
 
 # Google Sheets configuration
 SPREADSHEET_ID = os.getenv("GOOGLE_SPREADSHEET_ID", "your-spreadsheet-id-here")
