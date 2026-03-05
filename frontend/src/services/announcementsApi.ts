@@ -1,5 +1,4 @@
-// Use environment variable or default to relative path /api
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export type CreateAnnouncementInput = {
   company: string;

@@ -1,5 +1,4 @@
-// Use environment variable or default to relative path /api
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export interface CGPAData {
   cgpa: string;

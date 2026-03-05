@@ -28,9 +28,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Backend API base URL
-// Use environment variable or default to relative path /api
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+// Use environment variable or default to empty string (all calls prefix with /api)
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
