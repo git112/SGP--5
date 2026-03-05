@@ -69,20 +69,28 @@ app.include_router(resume_router)
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Global Exception Handler for 500 Errors
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     if isinstance(exc, HTTPException):
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"detail": exc.detail}
-        )
-    import traceback
-    error_details = traceback.format_exc()
-    logger.error(f"Global 500 Error: {str(exc)}\n{error_details}")
+        content = {"detail": exc.detail}
+        status_code = exc.status_code
+    else:
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Global 500 Error: {str(exc)}\n{error_details}")
+        content = {"detail": "Internal Server Error", "error": str(exc)}
+        status_code = 500
+    
+    # Manually add CORS headers to ensure the browser doesn't block error responses
     return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)}
+        status_code=status_code,
+        content=content,
+        headers={
+            "Access-Control-Allow-Origin": "https://placementor-ai-two.vercel.app",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
     )
 
 # Google Sheets configuration
