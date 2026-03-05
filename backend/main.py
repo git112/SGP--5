@@ -49,13 +49,6 @@ companies_service = CompaniesSheetsService()
 
 app = FastAPI()
 
-# Mount competency test API (interview endpoints, Python port of Node service)
-app.include_router(interview_router)
-app.include_router(resume_router)
-
-# Configure logging
-logger = logging.getLogger(__name__)
-
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
@@ -69,9 +62,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount competency test API (interview endpoints, Python port of Node service)
+app.include_router(interview_router)
+app.include_router(resume_router)
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
 # Global Exception Handler for 500 Errors
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
     import traceback
     error_details = traceback.format_exc()
     logger.error(f"Global 500 Error: {str(exc)}\n{error_details}")
