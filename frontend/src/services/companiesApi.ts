@@ -27,8 +27,8 @@ export interface CompaniesResponse {
   error?: string;
 }
 
-// Use environment variable or default to relative path /api
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// Use environment variable or default to empty string
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export class CompaniesApiService {
   private static instance: CompaniesApiService;
